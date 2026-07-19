@@ -1,0 +1,13 @@
+period,segment,weight,rate
+0,New,0.50,0.08
+0,Returning,0.35,0.18
+0,Enterprise,0.15,0.31
+1,New,0.44,0.10
+1,Returning,0.38,0.17
+1,Enterprise,0.18,0.33
+2,New,0.39,0.09
+2,Returning,0.40,0.20
+2,Enterprise,0.21,0.35
+3,New,0.42,0.11
+3,Returning,0.36,0.19
+3,Enterprise,0.22,0.36

@@ -64,7 +64,7 @@ md("### Exercise\n\nFor a statement such as “revenue was driven by price,” i
 
 notebooks['01_rates_kitagawa_dasgupta.ipynb'] = lesson(
 "01 — Rate decomposition: Kitagawa, Das Gupta, and replacement",
-"- Derive the two-factor rate decomposition.\n- Recognize path dependence with three or more factors.\n- Implement symmetric and stepwise allocations.",
+"- Derive the two-factor rate decomposition.\n- Recognize path dependence with three or more factors.\n- Implement stepwise, Das Gupta, and Shorrocks all-orders allocations.\n- Interpret Chevan–Sutherland category-level refinements.\n- Handle entrant/exit segments and compare direct with chained multiperiod decompositions.",
 r"""## Kitagawa identity: intuition
 
 For group $g$, the aggregate rate is $R_t=\sum_g w_{gt}r_{gt}$. Kitagawa's symmetric allocation is
@@ -101,10 +101,17 @@ ax = segment_contributions.plot.bar(color=['#4C78A8', '#F58518'])
 ax.axhline(0, color='black', linewidth=.8)
 ax.set_ylabel('contribution to aggregate rate change')
 plt.show()"""),
-md("### Exercise\n\nBootstrap observations within segments, recompute the decomposition, and form percentile intervals. Why is algebraic exactness not the same as statistical certainty?")],
+md("""### Exercises
+
+1. Bootstrap observations within segments and form percentile intervals for Kitagawa components. Why is exactness not statistical certainty?
+2. Build a channel × device cross-classification and produce Chevan–Sutherland-style category contributions. Identify offsetting categories.
+3. Apply the generic Shorrocks function to a four-factor funnel and approximate contributions by sampling permutations rather than enumerating $4!$ orders.
+4. Add one entrant and one disappearing segment. Compare a separate entry/exit component with three reference-rate assumptions.
+5. Simulate 12 monthly periods. Compare direct annual and chained monthly components, including gross positive and negative contributions.
+6. Design a hierarchical Shorrocks/Owen grouping for acquisition and product factors. Explain why flat and grouped allocations may differ.""")],
 """- Kitagawa, E. M. (1955). *JASA*, 50, 1168–1194. https://doi.org/10.1080/01621459.1955.10501299
 - Das Gupta, P. (1978). A general method of decomposing a difference between two rates into several components. *Demography*, 15, 99–112. https://doi.org/10.2307/2060493
-- Chevan, A., & Sutherland, M. (2009). Revisiting Das Gupta. *Demography*, 46, 429–449. https://doi.org/10.1353/dem.0.0051""")
+- Chevan, A., & Sutherland, M. (2009). Revisiting Das Gupta: Refinement and extension of standardization and decomposition. *Demography*, 46, 429–449. https://doi.org/10.1353/dem.0.0060""")
 
 notebooks['02_index_numbers_lmdi_pvm_sda.ipynb'] = lesson(
 "02 — Index numbers, LMDI, PVM, shift–share, and SDA",
@@ -540,9 +547,11 @@ $$C_j^{(\pi)}=F\!\left(z^{(j)}\right)-F\!\left(z^{(j-1)}\right),$$
 where $\pi$ denotes the selected order. Adding all steps produces a telescoping sum:
 
 $$\sum_{j=1}^{K}C_j^{(\pi)}
-=\cancel{F(z^{(1)})}-F(z^{(0)})
-+\cancel{F(z^{(2)})}-\cancel{F(z^{(1)})}+\cdots
-+F(z^{(K)})-\cancel{F(z^{(K-1)})},$$
+=[F(z^{(1)})-F(z^{(0)})]
++[F(z^{(2)})-F(z^{(1)})]+\cdots
++[F(z^{(K)})-F(z^{(K-1)})].$$
+
+Every intermediate value appears once with a positive sign and once with a negative sign, so the sum telescopes:
 
 so
 
@@ -651,6 +660,271 @@ md(r"""## Reading the Das Gupta output
 The first table shows that the marginal assigned to a factor changes with its replacement order; this is the interaction problem. The summary averages each factor's marginal across all six orders. `allocated` equals `observed`, so the symmetric multifactor decomposition is exact. The units are revenue per impression, because that is the function supplied to `funnel_value`.
 
 Changing the function changes the scientific question. Multiplying by impressions would decompose total revenue; keeping revenue per impression deliberately removes traffic scale and focuses on funnel efficiency."""),
+md(r"""## Chevan & Sutherland (2009): categorical refinement of Das Gupta
+
+### What problem did they solve?
+
+Das Gupta's cross-classification framework decomposes a difference in aggregate rates into effects associated with compositional variables and an overall rate effect. In many applications, a variable-level result is too coarse. Knowing that “channel composition” matters does not reveal whether Search, Social, Email, or Affiliate generated the contribution.
+
+Chevan and Sutherland make explicit a refinement already latent in the cross-classified framework: decompose both composition and rate effects down to the **categories** of each compositional variable. The categorical effects are additive:
+
+$$C_w=\sum_g C_{w,g},\qquad C_r=\sum_g C_{r,g},$$
+
+and therefore
+
+$$R_1-R_0=\sum_g(C_{w,g}+C_{r,g}).$$
+
+With one composition variable, these are exactly the segment-level Kitagawa contributions already calculated in the worked example. The contribution of Chevan–Sutherland is most valuable with several cross-classified variables, where effects can be reported both by variable and by category.
+
+### Cross-classified interpretation
+
+Suppose conversion is cross-classified by channel $i$ and device $j$:
+
+$$R_t=\sum_i\sum_j w_{ijt}r_{ijt}.$$
+
+A complete report can show:
+
+- total composition and rate effects;
+- channel-level category effects;
+- device-level category effects;
+- cell-level diagnostics that reveal offsetting contributions hidden by variable totals.
+
+Category effects may be large and opposite in sign even when their variable-level total is small. This is analogous to the aggregation issue demonstrated earlier: cancellation at a coarse level can hide substantively important movements.
+
+### Polytomous response variables
+
+Chevan–Sutherland also extend the orientation from a binary/rate outcome to a response with categories $k=1,\ldots,K$, such as subscription status {free, trial, paid, churned}. For each composition cell $(i,j)$, define
+
+$$t_{ijkt}=\frac{N_{ijkt}}{\sum_kN_{ijkt}},\qquad \sum_kt_{ijkt}=1.$$
+
+These cell percentages replace the scalar rate in separate decompositions for each response category. The results distinguish:
+
+- changes in the composition of users across channel/device cells;
+- changes in the propensity to occupy each response category inside a cell.
+
+Because response-category percentages sum to one, gains in some categories are balanced by losses in others. The paper further demonstrates extensions to the standard deviation and the multivariate index of dissimilarity.
+
+### What the refinement does not solve
+
+It does not make category effects causal, choose theoretically relevant control variables, solve sparse cross-classified cells, or guarantee aggregation invariance. Chevan and Sutherland explicitly emphasize that any selected categorical variable will yield a result; scientific meaning depends on theoretically justified variable selection."""),
+code(r"""# Chevan–Sutherland categorical reporting in the one-variable case.
+# Segment contributions add to variable-level composition and rate effects.
+category_report = d.set_index('segment')[['mix', 'rate']].copy()
+category_report['total category contribution'] = category_report.sum(axis=1)
+category_report.loc['variable-level total'] = category_report.sum(axis=0)
+category_report.loc['observed aggregate change', 'total category contribution'] = R1-R0
+category_report"""),
+md(r"""### Reading the categorical report
+
+The table exposes offsetting category effects. For example, the New segment has a negative mix effect but a positive rate effect. Reporting only the aggregate mix and rate totals would hide this internal structure.
+
+The variable-level total is the sum of category rows, demonstrating Chevan–Sutherland additivity in this simplified case. With several composition variables, use cross-classified cells and aggregate category contributions carefully; do not compute separate one-way decompositions and add them, because that can double-count interactions."""),
+md(r"""## Shorrocks (2013): a unified Shapley decomposition
+
+### General indicator and activation/neutralization game
+
+Shorrocks begins with an indicator completely determined by $m$ factors:
+
+$$I=f(X_1,X_2,\ldots,X_m).$$
+
+Define $K=\{1,\ldots,m\}$ and use one consistent convention for the set function $F(S)$: factors in $S$ are active at their target values, while factors outside $S$ are placed at declared neutral or baseline values. Thus $F(\varnothing)$ is fully neutralized and $F(K)$ is the complete target indicator. The scientific content lies partly in that rule: neutralizing growth might mean setting a growth factor to zero, while neutralizing an income source might mean replacing it by zero or by its mean.
+
+For factor $k\notin S$, its marginal effect is
+
+$$\Delta_kF(S)=F(S\cup\{k\})-F(S).$$
+
+One elimination sequence yields an exact telescoping decomposition but is path-dependent. Shorrocks averages over all $m!$ sequences:
+
+$$\boxed{C_k^{\mathrm{Sh}}=
+\sum_{S\subseteq K\setminus\{k\}}
+\frac{|S|!(m-|S|-1)!}{m!}\Delta_kF(S)}.$$
+
+This is formally the Shapley value of the decomposition game.
+
+### Key properties
+
+- **Exactness/efficiency:** $\sum_kC_k^{\mathrm{Sh}}=F(K)-F(\varnothing)$.
+- **Symmetry:** equivalent factors receive equal contributions.
+- **Expected marginal interpretation:** $C_k^{\mathrm{Sh}}$ is the mean marginal impact of $k$ over random activation paths.
+- **No residual:** interactions are absorbed symmetrically into factor contributions.
+- **Generality:** the indicator need not be additively decomposable and factors can be categorical, continuous, distributions, or model components.
+
+Shorrocks applies the rule to poverty growth/redistribution, subgroup poverty, inequality by subgroups, and inequality by income sources. In some classical cases it reproduces standard practice; in others it removes arbitrary residual terms.
+
+### Hierarchies and the Owen value
+
+Factors often have a hierarchy—for example Acquisition = {Search, Social} and Product = {Activation, Retention}. A two-stage Owen procedure first allocates across groups and then within each group.
+
+Flat Shapley and hierarchical Owen allocations need not coincide. Shorrocks shows that hierarchical aggregation consistency generally fails; an important exception arises when the function is **separable** over the grouped factors, meaning their marginal contributions do not depend on factors outside the group in the relevant way.
+
+This formalizes the segment-aggregation result seen earlier: grouping is a substantive modeling choice, not merely a display operation."""),
+code(r"""# Reusable Shorrocks all-orders decomposition for a hybrid-state function.
+def shorrocks_all_orders(base_values, final_values, value_function):
+    factor_names = list(base_values)
+    orders = list(permutations(factor_names))
+    contributions = {name: 0.0 for name in factor_names}
+
+    for order in orders:
+        state = base_values.copy()
+        for name in order:
+            before = value_function(state)
+            state[name] = final_values[name]
+            after = value_function(state)
+            contributions[name] += (after-before)/len(orders)
+
+    observed = value_function(final_values)-value_function(base_values)
+    return pd.Series({
+        **contributions,
+        'allocated': sum(contributions.values()),
+        'observed': observed,
+        'identity error': sum(contributions.values())-observed,
+    })
+
+shorrocks_all_orders(period0, period1, funnel_value)"""),
+md(r"""### Das Gupta versus Shorrocks
+
+The algorithms overlap but their scopes and motivations differ:
+
+| Dimension | Das Gupta | Chevan–Sutherland | Shorrocks |
+|---|---|---|---|
+| Primary origin | demographic standardization | refinement of demographic cross-classification | distributional economics/cooperative games |
+| Main object | differences in rates/means with composition | variable and category effects; polytomous distributions | any indicator $I=f(X_1,\ldots,X_m)$ |
+| Core operation | standardize and replace factors | reveal additive category detail | average marginal elimination effects |
+| Interaction handling | symmetric standardization/replacement | additive categorical refinement | Shapley averaging over every path |
+| Hierarchies | not the central focus | variables and categories | explicit Owen/two-stage analysis |
+| Causal by itself? | no | no | no |
+
+Shorrocks supplies the broad axiomatic umbrella. Das Gupta and Chevan–Sutherland supply demographic structure and category-level interpretations that a generic Shapley formula does not choose automatically."""),
+md(r"""## When a segment is absent in one period
+
+Suppose segment $g$ is absent at baseline but appears later:
+
+$$w_{g0}=0,\qquad w_{g1}>0.$$
+
+Its baseline rate $r_{g0}$ is not observed because the denominator is zero. The segment's total contribution to the aggregate change is nevertheless identified algebraically:
+
+$$w_{g1}r_{g1}-w_{g0}r_{g0}=w_{g1}r_{g1}.$$
+
+But the Kitagawa split is not identified without choosing a reference $r_{g0}^*$:
+
+$$C_{w,g}=w_{g1}\frac{r_{g1}+r_{g0}^*}{2},$$
+
+$$C_{r,g}=w_{g1}\frac{r_{g1}-r_{g0}^*}{2}.$$
+
+For any $r_{g0}^*$, the sum remains $w_{g1}r_{g1}$, but the mix/rate allocation changes. Setting the missing rate to zero is therefore not neutral; it splits entry equally between mix and rate.
+
+### Recommended reporting choices
+
+1. **Entry/exit component:** report $w_{g1}r_{g1}$ as a separate entrant contribution without claiming a mix/rate split. This is the most transparent default.
+2. **Declared reference rate:** use a theoretically justified benchmark such as the portfolio rate, a comparable segment, or a model-based prediction; show sensitivity.
+3. **Pool time or cells:** appropriate only when zero counts reflect sampling sparsity rather than a genuinely nonexistent segment.
+4. **Smoothing/modeling:** shrink sparse rates using a binomial/hierarchical model and propagate uncertainty. Do not confuse an estimated counterfactual rate with an observed rate.
+
+Distinguish a **structural zero** (the segment could not exist) from a **sampling zero** (it existed but no observations were recorded). The appropriate treatment differs."""),
+code(r"""# Entrant segment: exact total, reference-sensitive mix/rate split.
+w0_entry, w1_entry = 0.0, 0.08
+r1_entry = 0.24
+reference_rates = [0.0, 0.12, 0.18, 0.24]
+
+entry_sensitivity = []
+for r0_reference in reference_rates:
+    mix_entry = (w1_entry-w0_entry)*(r1_entry+r0_reference)/2
+    rate_entry = (r1_entry-r0_reference)*(w1_entry+w0_entry)/2
+    entry_sensitivity.append({
+        'assumed baseline rate': r0_reference,
+        'mix': mix_entry,
+        'rate': rate_entry,
+        'allocated total': mix_entry+rate_entry,
+        'identified entrant total': w1_entry*r1_entry,
+    })
+pd.DataFrame(entry_sensitivity)"""),
+md(r"""### Reading the entrant sensitivity table
+
+The allocated total is identical in every row, while the labels mix and rate move with the assumed missing baseline rate. If the reference equals the entrant's observed rate, all contribution is classified as mix. If the reference is zero, the contribution is split equally. Neither result is data-identified.
+
+This is an important difference between **exactness** and **identification**: the identity closes perfectly even when the internal allocation depends on an unobserved quantity."""),
+md(r"""## More than two periods: direct versus chained decomposition
+
+For periods $t=0,1,\ldots,T$, there are two principal approaches.
+
+### Direct endpoint comparison
+
+Apply Kitagawa to $0$ and $T$:
+
+$$R_T-R_0=C_w^{0,T}+C_r^{0,T}.$$
+
+This provides a compact long-run comparison but ignores intermediate reversals, temporary segments, and the timing of change.
+
+### Adjacent-period chaining
+
+Decompose each transition:
+
+$$R_t-R_{t-1}=C_w^{t-1,t}+C_r^{t-1,t}.$$
+
+Summing across time is exactly additive:
+
+$$R_T-R_0=\sum_{t=1}^{T}C_w^{t-1,t}
++\sum_{t=1}^{T}C_r^{t-1,t}.$$
+
+The total is the same, but chained mix/rate contributions generally differ from the direct endpoint split. This is **path dependence across time**, not an arithmetic error. Chaining preserves the actual sequence and can record entry/exit at the link where it occurs—but only after applying an explicit entry/exit or reference-rate rule. Direct comparison answers a cleaner endpoint question.
+
+### Recommendation
+
+- Use adjacent-period decompositions for monitoring and operational narratives.
+- Show the direct endpoint decomposition as a robustness comparison.
+- Keep segment definitions stable or document taxonomy bridges.
+- Report gross positive and negative contributions as well as the net; a factor can rise and later reverse.
+- Do not average away chronological order when timing is substantively meaningful.
+- For statistical rates, include uncertainty and multiple-comparison considerations across periods.
+
+Multiperiod decomposition remains descriptive. A time series of contributions is not a causal event study."""),
+code(r"""# Direct versus chained Kitagawa decomposition across four periods.
+panel = pd.DataFrame({
+    'period': np.repeat([0,1,2,3], 3),
+    'segment': ['New','Returning','Enterprise']*4,
+    'weight': [.50,.35,.15,  .44,.38,.18,  .39,.40,.21,  .42,.36,.22],
+    'rate':   [.08,.18,.31,  .10,.17,.33,  .09,.20,.35,  .11,.19,.36],
+})
+
+def kitagawa_pair(left, right):
+    joined = left.merge(right, on='segment', suffixes=('0','1'), how='outer')
+    joined[['weight0','weight1']] = joined[['weight0','weight1']].fillna(0)
+    # Rates must not be filled blindly when a segment is absent; this panel has none.
+    if joined[['rate0','rate1']].isna().any().any():
+        raise ValueError('Absent segment rate requires an entry/exit rule.')
+    mix = ((joined.weight1-joined.weight0)*(joined.rate1+joined.rate0)/2).sum()
+    rate = ((joined.rate1-joined.rate0)*(joined.weight1+joined.weight0)/2).sum()
+    return pd.Series({'mix':mix, 'rate':rate, 'total':mix+rate})
+
+period_data = {t:g[['segment','weight','rate']] for t,g in panel.groupby('period')}
+direct = kitagawa_pair(period_data[0], period_data[3])
+links = pd.DataFrame([
+    kitagawa_pair(period_data[t-1],period_data[t]).rename(f'{t-1}→{t}')
+    for t in range(1,4)
+])
+comparison_multiperiod = pd.DataFrame({
+    'direct 0→3': direct,
+    'sum of adjacent links': links.sum(),
+})
+links, comparison_multiperiod"""),
+md(r"""### Reading the multiperiod output
+
+Each adjacent row is an exact decomposition of that period's change. Their totals telescope to the direct $0\rightarrow3$ change. However, the accumulated mix and rate columns need not match the direct mix and rate components because the intermediate weights and rates affect the chained allocation.
+
+Neither answer dominates universally. Direct decomposition is endpoint-oriented; chaining is history-oriented. Present both when the managerial story depends on when changes occurred."""),
+md(r"""## Decision guide: which version should you use?
+
+| Analytical need | Recommended method | Required disclosure |
+|---|---|---|
+| Two-period aggregate rate, stable segments | Kitagawa | segment definition and 50/50 interaction rule |
+| More than two changing factors | Das Gupta/all-orders replacement | factorization, baseline, and permutations |
+| Need contributions by category | Chevan–Sutherland refinement | cross-classification, sparse cells, category definitions |
+| Arbitrary indicator or formal hierarchy | Shorrocks/Owen | neutralization game, hierarchy, separability assumptions |
+| New or disappearing segment | separate entry/exit component | structural versus sampling zero; any reference rate |
+| Operational monitoring over time | chained adjacent-period Kitagawa | link definitions, taxonomy changes, gross and net effects |
+| Long-run endpoint narrative | direct endpoint Kitagawa | omitted intermediate reversals and entry/exit history |
+
+Across every row, exactness means that allocated components reproduce the chosen total. It does not guarantee unique labels, statistical precision, aggregation invariance, or causal interpretation."""),
 md(r"""## Limitations, robustness, and inference
 
 - Shares must sum to one in each period and segments must be defined consistently.
@@ -658,13 +932,16 @@ md(r"""## Limitations, robustness, and inference
 - Results depend on segmentation; always repeat at plausible aggregation levels.
 - The total is aggregation-consistent under weighted aggregation, but the component split is generally not aggregation-invariant.
 - Das Gupta/all-orders replacement costs $K!$ paths if implemented literally; sampling permutations is needed for many factors.
+- Chevan–Sutherland category detail can become unstable or disclosure-sensitive in sparse cross-classified cells.
+- Entrant and exit segments have unidentified missing-period rates; exact totals do not identify a mix/rate split.
+- Chained multiperiod components are history-dependent and can differ from direct endpoint components.
 - Observed rate changes combine treatment, seasonality, selection, composition within cells, and noise.
 - For estimated rates, use a stratified bootstrap or delta method; exactness conditional on estimates is not zero sampling variance.
 - If channel is affected by treatment, conditioning on it can create post-treatment bias in a causal analysis.
 
 ## What came next
 
-**Das Gupta (1978)** extended the logic to several compositional factors and later systematized it in his 1993 monograph. **Chevan & Sutherland (2009)** revisited Das Gupta and supplied a general algorithmic treatment. For many interacting factors, **Shorrocks (2013)** formalized an axiomatic all-orders decomposition that clarifies the connection to Shapley allocation.""")],
+**Das Gupta (1978)** extended the logic to several compositional factors and later systematized it in his 1993 monograph. **Chevan & Sutherland (2009)** refined cross-classified decompositions to reveal additive category-level composition and rate effects, polytomous response distributions, standard deviations, and dissimilarity. **Shorrocks (2013; first draft 1999)** supplied a unified Shapley framework for arbitrary indicators, including hierarchical/two-stage Owen decompositions and formal conditions related to separability and aggregation. Later computational work uses permutation sampling and model-specific shortcuts when exhaustive paths are infeasible.""")],
 
 '02_index_numbers_lmdi_pvm_sda.ipynb': [
 md(r"""## 1. Index numbers: Laspeyres, Paasche, and Fisher
@@ -1465,6 +1742,8 @@ ADDITIONAL_REFS = {
 '01_rates_kitagawa_dasgupta.ipynb': r"""
 - Das Gupta, P. (1993). *Standardization and Decomposition of Rates: A User's Manual*. U.S. Census Bureau.
 - Shorrocks, A. F. (2013). Decomposition procedures for distributional analysis. *Journal of Economic Inequality*, 11, 99–126. https://doi.org/10.1007/s10888-011-9214-z
+- Owen, G. (1977). Values of games with a priori unions. In *Mathematical Economics and Game Theory*, 76–88. Springer. https://doi.org/10.1007/978-3-642-45494-3_7
+- Young, H. P. (1985). Monotonic solutions of cooperative games. *International Journal of Game Theory*, 14, 65–72. https://doi.org/10.1007/BF01769885
 """,
 '02_index_numbers_lmdi_pvm_sda.ipynb': r"""
 - Balk, B. M. (2008). *Price and Quantity Index Numbers: Models for Measuring Aggregate Change and Difference*. Cambridge University Press. https://doi.org/10.1017/CBO9780511720758
@@ -1539,7 +1818,7 @@ Weighted averages and percentage-point changes. Notebook 00's distinction betwee
 | $R_t$ | aggregate rate $\sum_gw_{gt}r_{gt}$ |
 | $C_w,C_r$ | mix and within-segment-rate contributions |
 
-We first establish the identity, then calculate it, interpret the output, and finally test whether the answer changes when segments are aggregated.""",
+The sequence moves from Kitagawa to Stepwise and Das Gupta, then to Chevan–Sutherland's categorical refinement and Shorrocks's general axiomatic rule. It closes with two practical complications: missing segment rates and multiperiod chaining.""",
 '02_index_numbers_lmdi_pvm_sda.ipynb': r"""## Roadmap and notation
 
 ### Guiding question
@@ -1665,8 +1944,12 @@ Notebook 01 now specializes this framework to the simplest important object: an 
 
 1. Kitagawa separates mix from within-segment rate changes exactly.
 2. The equal interaction split is symmetric but conventional.
-3. Segmentation and sampling uncertainty can materially change the story.
-4. Use causal language only with a separate design.
+3. Chevan–Sutherland exposes additive category effects and extends the framework to polytomous distributions.
+4. Shorrocks generalizes all-orders marginal allocation to arbitrary indicators and explicit hierarchies.
+5. An absent-period segment rate is not observed: the entrant total is identified, but its mix/rate split is not.
+6. Chained and direct multiperiod totals agree, while their component allocations can differ.
+7. Segmentation, hierarchy, time path, and sampling uncertainty can materially change the story.
+8. Use causal language only with a separate design.
 
 Notebook 02 moves from weighted rates to totals generated by multiplicative business identities.""",
 '02_index_numbers_lmdi_pvm_sda.ipynb': r"""## Takeaways and bridge to Notebook 03
