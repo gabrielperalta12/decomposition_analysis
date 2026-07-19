@@ -108,8 +108,8 @@ md("### Exercise\n\nBootstrap observations within segments, recompute the decomp
 
 notebooks['02_index_numbers_lmdi_pvm_sda.ipynb'] = lesson(
 "02 — Index numbers, LMDI, PVM, shift–share, and SDA",
-"- Compare Laspeyres, Fisher, and logarithmic-mean allocations.\n- Implement exact additive LMDI.\n- Understand PVM and SDA as decompositions of identities.",
-r"""## Multiplicative identities
+"- Derive and compare Laspeyres, Paasche, and Fisher indexes.\n- Prove additive LMDI exactness and implement additive and multiplicative interpretations.\n- Distinguish price, volume, genuine mix, and interaction conventions.\n- Derive classical shift–share and interpret its benchmark-relative residual.\n- Derive a symmetric two-factor structural decomposition using the Leontief model.",
+r"""## Overview: identities and allocation rules
 
 If emissions $E=\sum_i Q_i I_i$, the additive LMDI uses the logarithmic mean $L(a,b)=(a-b)/(\log a-\log b)$:
 $$\Delta E_Q=\sum_iL(E_{i1},E_{i0})\log(Q_{i1}/Q_{i0}),\quad
@@ -161,7 +161,14 @@ pvm = pd.DataFrame({
 pvm.plot.bar()
 plt.ylabel('revenue contribution')
 plt.show()"""),
-md("### Exercise\n\nReallocate the PVM interaction 50/50 and compare rankings. Explain why both answers can be exact yet non-unique.")],
+md("""### Exercises
+
+1. Verify Fisher's time-reversal test by swapping periods and multiplying the forward and reverse indexes.
+2. Implement multiplicative LMDI for the growth funnel and verify that the factor indexes multiply to $Y_1/Y_0$.
+3. Decompose product revenue into total volume, product mix, price, and interactions using two alternative conventions.
+4. Change the shift–share portfolio benchmark and base year. Which component is most sensitive, and why?
+5. Calculate both SDA polar decompositions before averaging them. Explain which factor receives the interaction in each path.
+6. For a paid-marketing question, write separately an exact accounting decomposition and a causal estimand for incrementality.""")],
 """- Diewert, W. E. (1976). Exact and superlative index numbers. *Journal of Econometrics*, 4, 115–145. https://doi.org/10.1016/0304-4076(76)90009-9
 - Ang, B. W. (2005). The LMDI approach to decomposition analysis. *Energy Policy*, 33, 867–871. https://doi.org/10.1016/j.enpol.2003.10.010
 - Dunn, E. S. (1960). A statistical and analytical technique for regional analysis. *Papers of the RSA*, 6, 97–112.
@@ -197,7 +204,7 @@ md("### Exercise\n\nAdd an interaction and nonlinear term to the data-generating
 
 notebooks['04_shapley_anova_ml.ipynb'] = lesson(
 "04 — Shapley, Aumann–Shapley, functional ANOVA, and SHAP",
-"- Implement exact Shapley values.\n- Relate efficiency and symmetry to attribution.\n- Separate predictive attribution from causal attribution.",
+"- Derive exact Shapley values from random-order marginal contributions.\n- Prove efficiency and interpret the Shapley axioms.\n- Derive Aumann–Shapley as a line-integral allocation.\n- Construct functional ANOVA and variance components.\n- Derive SHAP for model predictions and separate predictive from causal attribution.",
 r"""## Cooperative-game allocation
 
 For value function $v(S)$ and $p$ players,
@@ -218,7 +225,13 @@ for order in permutations(features):
         phi[j]+=(value(S|{j})-value(S))/np.math.factorial(len(features)); S.add(j)
 pd.Series({**phi,'allocated':sum(phi.values()),'observed':revenue(current)-revenue(base)})""".replace('np.math.factorial','__import__("math").factorial')),
 code("""pd.Series(phi).plot.bar(color=['#4C78A8','#54A24B','#E45756']); plt.axhline(0,color='black',lw=.8); plt.ylabel('Shapley revenue contribution'); plt.show()"""),
-md("### Exercise\n\nChange the baseline and recompute. Which axioms remain true? Why does baseline sensitivity weaken any claim that a contribution is intrinsic?")],
+md("""### Exercises
+
+1. Change the revenue baseline and recompute discrete Shapley values. Which axioms remain true, and which business interpretation changes?
+2. Replace the straight Aumann–Shapley path with a path that changes traffic first and price last. Compare contributions and verify efficiency.
+3. Modify the functional ANOVA example so $X_2$ is correlated with $X_1$. Show numerically why the classical variance components no longer add cleanly.
+4. Change the SHAP background mean for the linear model. Verify local accuracy and explain why the feature attributions move.
+5. For one growth intervention, define separately a descriptive Shapley game, a predictive SHAP game, and a causal estimand.""")],
 """- Shapley, L. S. (1953). A value for n-person games. In *Contributions to the Theory of Games II*. Princeton University Press.
 - Aumann, R. J., & Shapley, L. S. (1974). *Values of Non-Atomic Games*. Princeton University Press.
 - Hoeffding, W. (1948). A class of statistics with asymptotically normal distribution. *Annals of Mathematical Statistics*, 19, 293–325.
@@ -287,6 +300,121 @@ An econometric analysis should declare an estimand before choosing an estimator.
 ### Growth-marketing use case
 
 For $\text{Revenue}=\text{Traffic}\times\text{CVR}\times\text{AOV}$, attribution answers how the realized revenue change is distributed across these factors. It does **not** answer what revenue would have been if a campaign manager had intervened on traffic while holding the rest of the system at its post-intervention equilibrium."""),
+md(r"""## Descriptive versus causal counterfactuals
+
+This distinction is subtle because both approaches construct a world that was not observed exactly as stated. The decisive difference is not the word *counterfactual*. It is the **scientific question**, the **meaning of the hypothetical world**, and the assumptions required to connect that world to reality.
+
+### 1. A descriptive counterfactual: hold a component fixed
+
+Suppose
+
+$$\text{Sales}=\text{Traffic}\times\text{Conversion rate}.$$
+
+The observed periods are
+
+| Period | Traffic | Conversion rate | Sales |
+|---|---:|---:|---:|
+| 0 | 1,000 | 10% | 100 |
+| 1 | 1,200 | 10% | 120 |
+
+A decomposition may construct the hybrid scenario
+
+$$\widetilde Y=1{,}000\times 10\%=100,$$
+
+which combines baseline traffic with the comparison-period conversion rate. Because conversion did not change, all 20 additional sales are allocated to traffic.
+
+This hypothetical answers:
+
+> How would the accounting identity evaluate if one observed component were held at its baseline value while the other component took its comparison-period value?
+
+Everything used to construct the hybrid state—1,000 visits and a 10% conversion rate—was observed somewhere in the two periods. The analyst is rearranging observed factor values inside a known identity. No treatment, assignment mechanism, intervention, or missing potential outcome has been specified.
+
+The conclusion is therefore descriptive:
+
+> Under this decomposition rule, the observed increase of 20 sales is allocated entirely to the traffic component.
+
+It does **not** imply that a campaign caused traffic to increase, that increasing traffic deliberately would leave conversion fixed, or that another 200 visits would generate exactly 20 incremental sales under intervention.
+
+### 2. A causal counterfactual: compare interventions
+
+Now define $A=1$ as launching a campaign and $A=0$ as not launching it. Let
+
+$$Y(1)=\text{sales under the campaign},\qquad
+Y(0)=\text{sales without the campaign}.$$
+
+For the same business and period, the causal effect is
+
+$$\tau=Y(1)-Y(0).$$
+
+If the campaign was launched, we observe $Y=Y(1)=120$ but do not observe $Y(0)$. If it was not launched, we observe $Y(0)$ but not $Y(1)$. This is the fundamental problem of causal inference: for the same unit at the same time, only one potential outcome is observed.
+
+The causal question is:
+
+> How many sales would this same business have generated in the same period under the alternative intervention—no campaign?
+
+Unlike the descriptive hybrid, $Y(0)$ is not obtained merely by substituting an observed traffic value into the sales identity. Without the campaign, competitor behavior, channel auctions, user composition, conversion, prices, and seasonality might all differ. The counterfactual must be identified using a research design and assumptions—for example randomization, conditional exchangeability, parallel trends, an instrument, or a credible synthetic control.
+
+### 3. What is held fixed?
+
+| Dimension | Descriptive decomposition | Causal inference |
+|---|---|---|
+| Main question | How is an observed difference allocated? | What would change under an intervention? |
+| Hypothetical object | Hybrid combination of factor values | Potential outcome or interventional distribution |
+| Typical notation | $F(x_{11},x_{20})$ | $Y(1),Y(0)$ or $P(Y\mid do(A=a))$ |
+| What is held fixed | Components by accounting convention | Unit/population definition and intervention contrast |
+| Other variables | Often fixed mechanically or changed by a path rule | May respond downstream to the intervention |
+| Missing-data problem | Usually no missing potential outcome is defined | One potential outcome per unit is fundamentally unobserved |
+| Primary requirement | Valid identity and explicit allocation rule | Identification assumptions plus an estimator |
+| Typical conclusion | “Traffic contributed 20 sales under rule $R$” | “The campaign caused $\tau$ incremental sales under assumptions $A$” |
+
+The phrase “same business” in a causal question does not mean every measured variable is frozen. It means we compare well-defined interventions for the same target unit or population. Mediators such as traffic and conversion may change as part of the treatment's total effect.
+
+### 4. Netflix example
+
+Observed watch hours increase from 100 to 120 after an algorithm change.
+
+A descriptive decomposition might allocate the increase as:
+
+- +8 hours from more active users;
+- +7 hours from more time per active user;
+- +5 hours from better observed retention.
+
+This exactly accounts for the 20-hour change under a stated driver identity or allocation rule. It does not show that the algorithm produced any of those component changes.
+
+The causal estimand instead compares
+
+$$E[Y(\text{new algorithm})-Y(\text{old algorithm})].$$
+
+Estimating it requires the missing outcome that would have occurred for comparable users under the algorithm not received. An A/B test could identify this contrast under random assignment, consistency, limited interference, and correct outcome measurement.
+
+### 5. Pricing example
+
+A CFO asks: “Which components account for the profit increase?” A Price–Volume–Mix decomposition can allocate the observed difference to price, volume, mix, cost, and interactions.
+
+A CEO asks: “Did our new pricing strategy cause the profit increase?” This requires
+
+$$\text{Profit}(\text{new policy})-\text{Profit}(\text{old policy}).$$
+
+Holding observed volume fixed while substituting the new price is not generally the causal counterfactual, because demand, mix, competitor prices, and customer selection can respond to price. The descriptive price component is therefore not a price elasticity or a policy effect.
+
+### 6. A practical classification rule
+
+When a paper says “counterfactual,” ask:
+
+1. **Is this a hybrid scenario formed by replacing or holding fixed components inside an identity or fitted model?**  
+   It is primarily a descriptive attribution unless additional causal structure is supplied.
+2. **Is this an alternative world defined by a treatment or intervention?**  
+   It is a causal estimand only if the intervention, target population, identification assumptions, and estimator are explicit.
+3. **Could downstream variables respond to the intervention?**  
+   If yes, mechanically freezing them may block part of the effect or create an incoherent intervention.
+4. **What evidence identifies the unobserved world?**  
+   If the answer is only “the decomposition is exact,” causality has not been established.
+
+### 7. Important nuance
+
+Some modern decomposition methods use statistically estimated counterfactual distributions—for example reweighting one group's covariate distribution to resemble another's. These are more than simple accounting substitutions, but they are still not automatically causal. Their interpretation depends on whether the reweighted distribution is merely descriptive or is identified as the distribution that would arise under a well-defined intervention.
+
+Therefore, “descriptive” does not mean useless or unsophisticated. A descriptive counterfactual can be exact, decision-relevant, and mathematically rigorous. It simply answers a different question from a causal counterfactual."""),
 md(r"""## Limitations and failure modes
 
 - **Non-uniqueness:** interactions admit multiple exact allocations.
@@ -539,56 +667,374 @@ md(r"""## Limitations, robustness, and inference
 **Das Gupta (1978)** extended the logic to several compositional factors and later systematized it in his 1993 monograph. **Chevan & Sutherland (2009)** revisited Das Gupta and supplied a general algorithmic treatment. For many interacting factors, **Shorrocks (2013)** formalized an axiomatic all-orders decomposition that clarifies the connection to Shapley allocation.""")],
 
 '02_index_numbers_lmdi_pvm_sda.ipynb': [
-md(r"""## Index-number formulas and exactness
+md(r"""## 1. Index numbers: Laspeyres, Paasche, and Fisher
 
-For prices $p_t$ and quantities $q_t$, the Laspeyres and Paasche price indexes are
+### The problem
 
-$$P_L=\frac{\sum_i p_{i1}q_{i0}}{\sum_i p_{i0}q_{i0}},\qquad
-P_P=\frac{\sum_i p_{i1}q_{i1}}{\sum_i p_{i0}q_{i1}},$$
+For several products, total expenditure or revenue is
 
-and Fisher's superlative index is $P_F=(P_LP_P)^{1/2}$. For a multiplicative identity $Y=\prod_k x_k$, the Divisia differential is
+$$V_t=\sum_{i=1}^n p_{it}q_{it}.$$
 
-$$d\log Y=\sum_k \frac{\partial\log Y}{\partial\log x_k}d\log x_k.$$
+The value ratio $V_1/V_0$ combines price and quantity changes. An index-number system seeks price and quantity indexes satisfying approximately or exactly
 
-LMDI replaces the continuous integral by logarithmic-mean weights and produces a perfect finite-change decomposition for positive data. PVM instead expands
+$$\frac{V_1}{V_0}=P(0,1)Q(0,1).$$
 
-$$\Delta(pq)=q_0\Delta p+p_0\Delta q+\Delta p\Delta q,$$
+### Fixed-weight indexes
 
-so the price–volume interaction must be reported or allocated by a declared rule."""),
-md(r"""## Growth-marketing case: revenue and paid acquisition
+The Laspeyres price index values current prices using baseline quantities:
 
-A useful driver identity is
+$$P_L=\frac{\sum_i p_{i1}q_{i0}}{\sum_i p_{i0}q_{i0}}.$$
 
-$$\text{Revenue}=\text{Impressions}\times\text{CTR}\times\text{CVR}\times\text{AOV}.$$
+The Paasche price index uses current quantities:
 
-LMDI can allocate the observed change across scale, click efficiency, conversion, and order value. A second identity,
+$$P_P=\frac{\sum_i p_{i1}q_{i1}}{\sum_i p_{i0}q_{i1}}.$$
+
+Their quantity counterparts are
+
+$$Q_L=\frac{\sum_i p_{i0}q_{i1}}{\sum_i p_{i0}q_{i0}},\qquad
+Q_P=\frac{\sum_i p_{i1}q_{i1}}{\sum_i p_{i1}q_{i0}}.$$
+
+Laspeyres tends to overweight goods that were important in the base period; Paasche uses the comparison-period basket and may reflect substitution that already occurred. Neither is universally “correct”: they answer different basket questions.
+
+### Fisher's symmetric index and factor reversal
+
+Fisher takes geometric means:
+
+$$P_F=\sqrt{P_LP_P},\qquad Q_F=\sqrt{Q_LQ_P}.$$
+
+Because $P_LQ_P=V_1/V_0$ and $P_PQ_L=V_1/V_0$,
+
+$$P_FQ_F=\sqrt{P_LP_PQ_LQ_P}=\frac{V_1}{V_0}.$$
+
+Thus Fisher passes the **factor-reversal test** exactly. It also passes the time-reversal test: reversing periods gives the reciprocal index. Diewert (1976) called Fisher “superlative” because it is exact for a flexible quadratic aggregator and provides a second-order approximation to broad preference/technology structures.
+
+Index numbers summarize relative change; they do not estimate demand elasticities or causal price effects."""),
+md(r"""## Business and growth setting
+
+This notebook uses a common hierarchy:
+
+$$\text{Revenue}=\sum_i p_iq_i,$$
+
+and, for a digital funnel,
+
+$$\text{Revenue}=\text{Impressions}\times\text{CTR}
+\times\text{CVR}\times\text{AOV}.$$
+
+Index numbers summarize price and quantity change across products. PVM allocates an absolute revenue change. LMDI allocates multiplicative driver changes. Shift–share compares growth across channels or markets. SDA handles systems in which outputs depend on matrices of interdependencies.
+
+A second identity,
 
 $$\text{Profit}=\text{Revenue}-\text{Spend},\qquad
 \text{Spend}=\text{Clicks}\times\text{CPC},$$
 
-prevents a favorable revenue attribution from being mistaken for incremental profit. Use channel-level components, report zeros explicitly, and distinguish gross from incremental conversions."""),
+prevents a favorable gross-revenue attribution from being mistaken for incremental profit."""),
+code(r"""# Compare bilateral price and quantity indexes on the same products.
+index_data = pd.DataFrame({
+    'product': ['A', 'B', 'C'],
+    'p0': [10., 16., 25.],
+    'p1': [11., 15., 27.],
+    'q0': [100., 80., 50.],
+    'q1': [115., 70., 66.],
+})
+
+p0_i, p1_i = index_data.p0, index_data.p1
+q0_i, q1_i = index_data.q0, index_data.q1
+V0 = (p0_i*q0_i).sum()
+V1 = (p1_i*q1_i).sum()
+
+P_L = (p1_i*q0_i).sum() / V0
+P_P = V1 / (p0_i*q1_i).sum()
+Q_L = (p0_i*q1_i).sum() / V0
+Q_P = V1 / (p1_i*q0_i).sum()
+P_F = np.sqrt(P_L*P_P)
+Q_F = np.sqrt(Q_L*Q_P)
+
+pd.Series({
+    'value ratio V1/V0': V1/V0,
+    'Laspeyres price': P_L,
+    'Paasche price': P_P,
+    'Fisher price': P_F,
+    'Laspeyres quantity': Q_L,
+    'Paasche quantity': Q_P,
+    'Fisher quantity': Q_F,
+    'Fisher factor-reversal error': P_F*Q_F - V1/V0,
+})"""),
+md(r"""### Reading the index-number output
+
+Laspeyres and Paasche differ because they use different baskets. Fisher lies between them and its price index multiplied by its quantity index reproduces the observed value ratio, as shown by the near-zero factor-reversal error.
+
+For pricing analytics, report which basket is used. A statement such as “prices increased 4%” is incomplete without the index formula, product coverage, treatment of new/disappearing products, and whether indexes are bilateral or chained."""),
+md(r"""## 2. Divisia and LMDI
+
+### From infinitesimal change to finite decomposition
+
+For a differentiable aggregate $Y=F(x_1,\ldots,x_K)$, a Divisia decomposition follows the total differential
+
+$$dY=\sum_{k=1}^K\frac{\partial F}{\partial x_k}dx_k,$$
+
+or in logarithmic form
+
+$$d\log Y=\sum_k\frac{\partial\log F}{\partial\log x_k}d\log x_k.$$
+
+This identity is exact for infinitesimal changes. Discrete data require an integration or index approximation. For an additive aggregate
+
+$$E_t=\sum_i E_{it},\qquad E_{it}=\prod_{k=1}^K x_{kit},$$
+
+define the logarithmic mean
+
+$$L(a,b)=\begin{cases}
+\dfrac{a-b}{\log a-\log b},&a\ne b,\\[4pt]
+a,&a=b.
+\end{cases}$$
+
+The additive LMDI contribution of factor $k$ is
+
+$$\boxed{\Delta E_k=\sum_iL(E_{i1},E_{i0})
+\log\left(\frac{x_{ki1}}{x_{ki0}}\right)}.$$
+
+### Proof of perfect decomposition
+
+For each component,
+
+$$\sum_k\log\left(\frac{x_{ki1}}{x_{ki0}}\right)
+=\log\left(\frac{E_{i1}}{E_{i0}}\right).$$
+
+Therefore
+
+$$\sum_k\Delta E_k
+=\sum_iL(E_{i1},E_{i0})\log(E_{i1}/E_{i0})
+=\sum_i(E_{i1}-E_{i0})=E_1-E_0.$$
+
+The second equality follows directly from the definition of $L$. Hence LMDI has no unexplained residual for positive data.
+
+The multiplicative form uses
+
+$$D_k=\exp\left(\sum_i\frac{L(E_{i1},E_{i0})}{L(E_1,E_0)}
+\log\frac{x_{ki1}}{x_{ki0}}\right),\qquad
+\prod_kD_k=\frac{E_1}{E_0}.$$
+
+Additive and multiplicative forms express the same comparison in absolute and ratio units, respectively."""),
 code(r"""# Growth funnel: exact LMDI allocation of revenue change
-f0 = pd.Series({'impressions':1_000_000., 'ctr':.020, 'cvr':.040, 'aov':55.})
-f1 = pd.Series({'impressions':1_150_000., 'ctr':.023, 'cvr':.037, 'aov':58.})
+f0 = pd.Series({'impressions': 1_000_000., 'ctr': .020, 'cvr': .040, 'aov': 55.})
+f1 = pd.Series({'impressions': 1_150_000., 'ctr': .023, 'cvr': .037, 'aov': 58.})
 y0, y1 = f0.prod(), f1.prod()
 weight = L(np.array([y1]), np.array([y0]))[0]
 funnel_contrib = weight * np.log(f1/f0)
-pd.concat([funnel_contrib.rename('contribution'),
-           (100*funnel_contrib/(y1-y0)).rename('share_pct')], axis=1).assign(
-               total_change=y1-y0 if False else np.nan)
+funnel_result = pd.concat([
+    funnel_contrib.rename('absolute contribution'),
+    (100*funnel_contrib/(y1-y0)).rename('share of change (%)'),
+], axis=1)
+funnel_result.loc['sum / observed change'] = [funnel_contrib.sum(), 100.]
+funnel_result
 """),
+md(r"""### Reading the growth-funnel LMDI
+
+The contributions sum to the observed revenue change. Impressions, CTR, and AOV contribute positively; CVR contributes negatively because it falls. A negative CVR contribution does not prove that a campaign harmed conversion—it describes the arithmetic role of the observed CVR movement.
+
+Growth applications include revenue waterfalls, CAC identities, energy-like decompositions of marketing spend, and cohort LTV factorizations. Always state units and factorization. `Impressions × CTR × CVR × AOV` and `Clicks × orders-per-click × AOV` are algebraically compatible but create different reporting levels."""),
+md(r"""## 3. Price–Volume–Mix (PVM)
+
+### One product
+
+For revenue $R=pq$,
+
+$$\Delta R=q_0\Delta p+p_0\Delta q+\Delta p\Delta q.$$
+
+The three terms are baseline-weighted price, baseline-weighted volume, and interaction. Three common exact conventions are:
+
+1. **Explicit interaction:** report all three terms.
+2. **Price-first:** $C_p=q_0\Delta p$ and $C_q=p_1\Delta q$.
+3. **Symmetric:** split interaction equally:
+
+$$C_p=\Delta p\frac{q_0+q_1}{2},\qquad
+C_q=\Delta q\frac{p_0+p_1}{2}.$$
+
+All sum to $\Delta R$, but individual contributions differ.
+
+### Multiple products and genuine mix
+
+Write $q_i=Qs_i$, where $Q=\sum_iq_i$ is total units and $s_i=q_i/Q$ is product share. Then
+
+$$R=Q\sum_i p_is_i=Q\bar p.$$
+
+A change in product shares is distinct from a change in total units. A useful decomposition must separate total volume from mix rather than labeling every product-level quantity change “mix.” Because $Q$, $s$, and $p$ interact, the analyst must state the interaction rule—base weights, symmetric polar average, LMDI, or all-orders/Shapley."""),
+code(r"""# Compare three exact PVM conventions for one product.
+p0_one, p1_one = 50., 48.
+q0_one, q1_one = 40., 60.
+dp, dq = p1_one-p0_one, q1_one-q0_one
+observed_change = p1_one*q1_one - p0_one*q0_one
+
+pvm_conventions = pd.DataFrame({
+    'explicit interaction': [q0_one*dp, p0_one*dq, dp*dq],
+    'price first': [q0_one*dp, p1_one*dq, 0.],
+    'symmetric split': [dp*(q0_one+q1_one)/2,
+                        dq*(p0_one+p1_one)/2, 0.],
+}, index=['price','volume','interaction'])
+pvm_conventions.loc['allocated total'] = pvm_conventions.sum()
+pvm_conventions.loc['observed change'] = observed_change
+pvm_conventions"""),
+md(r"""### PVM applications and econometric interpretation
+
+PVM is useful for financial planning, SKU revenue bridges, subscription plan migration, and separating AOV from order growth. In paid growth, an analogous bridge can separate CPC, clicks, conversion, and order value.
+
+Limitations:
+
+- Results depend on interaction convention and base period.
+- New/discontinued products require explicit entry/exit treatment.
+- Discounts, returns, taxes, and currency effects can make “price” ambiguous.
+- Observed price and quantity are jointly determined; the price contribution is not a demand curve or elasticity.
+- Product-mix shifts can be endogenous to promotions, availability, and customer selection.
+
+For a causal pricing question, estimate what quantity and mix would have occurred under the alternative price policy; do not freeze observed quantity mechanically."""),
+md(r"""## 4. Shift–share decomposition
+
+Shift–share was developed for regional employment analysis but transfers naturally to channels, geographies, products, and customer segments. Let $E_{ir0}$ be baseline activity in industry/channel $i$ and region/business unit $r$. Define national/portfolio growth $g$, category growth $g_i$, and local category growth $g_{ir}$.
+
+The classical change is decomposed as
+
+$$\Delta E_{ir}=
+\underbrace{E_{ir0}g}_{\text{overall growth}}
++\underbrace{E_{ir0}(g_i-g)}_{\text{category mix}}
++\underbrace{E_{ir0}(g_{ir}-g_i)}_{\text{local competitive shift}}.$$
+
+The proof is immediate:
+
+$$g+(g_i-g)+(g_{ir}-g_i)=g_{ir}.$$
+
+Multiplying by $E_{ir0}$ recovers $E_{ir0}g_{ir}=E_{ir1}-E_{ir0}$.
+
+The “competitive” residual is a benchmark-relative descriptive term. It is not evidence that local management or a campaign caused superior growth."""),
+code(r"""# Marketing shift–share: conversions by channel in one region.
+shift_share = pd.DataFrame({
+    'channel': ['Search', 'Social', 'Email'],
+    'local_0': [500., 300., 200.],
+    'local_1': [570., 390., 218.],
+    'portfolio_0': [5_000., 4_000., 2_000.],
+    'portfolio_1': [5_400., 4_800., 2_100.],
+})
+portfolio_total_growth = (
+    shift_share.portfolio_1.sum()/shift_share.portfolio_0.sum()-1
+)
+shift_share['category_growth'] = (
+    shift_share.portfolio_1/shift_share.portfolio_0-1
+)
+shift_share['local_growth'] = shift_share.local_1/shift_share.local_0-1
+shift_share['overall'] = shift_share.local_0*portfolio_total_growth
+shift_share['category_mix'] = shift_share.local_0*(
+    shift_share.category_growth-portfolio_total_growth
+)
+shift_share['local_shift'] = shift_share.local_0*(
+    shift_share.local_growth-shift_share.category_growth
+)
+shift_share['observed_change'] = shift_share.local_1-shift_share.local_0
+shift_share['identity_error'] = (
+    shift_share[['overall','category_mix','local_shift']].sum(axis=1)
+    - shift_share.observed_change
+)
+shift_share[['channel','overall','category_mix','local_shift',
+             'observed_change','identity_error']]"""),
+md(r"""### Shift–share applications and limitations
+
+In growth marketing, overall growth measures the expansion expected if the local unit followed the portfolio; category mix measures exposure to faster/slower-growing channels; local shift measures growth beyond the category benchmark.
+
+- Results are sensitive to benchmark, base year, geographic/channel classification, and analysis window.
+- The competitive term is a residual containing measurement error, omitted composition, shocks, and regression-to-the-mean.
+- Classical shift–share has no sampling model or causal identification by itself.
+- Dynamic shift–share updates weights through time but can change interpretation and introduce path dependence.
+- In econometrics, a **Bartik/shift–share instrument** is a different object: causal validity requires exposure shares, shocks, exclusion restrictions, and appropriate inference. The descriptive decomposition does not establish instrument validity."""),
+md(r"""## 5. Structural Decomposition Analysis (SDA)
+
+SDA decomposes changes in systems represented by matrix identities, especially input–output economics. In the Leontief quantity model,
+
+$$x=Ax+y,$$
+
+where $x$ is gross output, $A$ is the matrix of intermediate-input coefficients, and $y$ is final demand. If $I-A$ is invertible,
+
+$$x=(I-A)^{-1}y=Ly,$$
+
+where $L$ is the Leontief inverse. Between periods,
+
+$$\Delta x=L_1y_1-L_0y_0.$$
+
+Two exact polar decompositions are
+
+$$\Delta x=(L_1-L_0)y_0+L_1(y_1-y_0),$$
+
+and
+
+$$\Delta x=(L_1-L_0)y_1+L_0(y_1-y_0).$$
+
+Their average gives a symmetric two-factor allocation:
+
+$$\Delta x_L=\frac12(L_1-L_0)(y_0+y_1),$$
+
+$$\Delta x_y=\frac12(L_0+L_1)(y_1-y_0).$$
+
+Adding them recovers $\Delta x$. With more determinants—technology, demand level, demand composition, trade, emissions intensity—the number of polar paths increases, motivating average-polar or all-permutation rules."""),
+code(r"""# Two-sector SDA: technology versus final-demand effects.
+A0 = np.array([[.20, .10], [.05, .25]])
+A1 = np.array([[.18, .12], [.07, .22]])
+y0_sda = np.array([100., 80.])
+y1_sda = np.array([118., 86.])
+I = np.eye(2)
+L0 = np.linalg.inv(I-A0)
+L1 = np.linalg.inv(I-A1)
+x0_sda = L0 @ y0_sda
+x1_sda = L1 @ y1_sda
+
+technology_effect = .5*(L1-L0) @ (y0_sda+y1_sda)
+demand_effect = .5*(L0+L1) @ (y1_sda-y0_sda)
+
+pd.DataFrame({
+    'technology effect': technology_effect,
+    'final-demand effect': demand_effect,
+    'allocated change': technology_effect+demand_effect,
+    'observed change': x1_sda-x0_sda,
+    'identity error': technology_effect+demand_effect-(x1_sda-x0_sda),
+}, index=['sector 1','sector 2'])"""),
+md(r"""### SDA applications and limitations
+
+SDA is used for emissions footprints, supply-chain requirements, productivity, trade, and demand propagation. A business analogue is a networked operating model in which acquisition, fulfillment, support, and retention depend on one another through a coefficient matrix.
+
+- Results inherit input–output measurement error and sector aggregation choices.
+- The Leontief model assumes fixed linear coefficients within each period and requires $(I-A)^{-1}$ to exist.
+- Symmetric polar averaging resolves two-factor order dependence but remains an allocation convention.
+- With many factors, exact all-order averaging can become expensive.
+- Technology coefficients describe requirements, not necessarily causal production responses under policy intervention.
+- Structural change may include prices, capacity constraints, substitution, and behavioral adjustment absent from the fixed-coefficient identity."""),
+md(r"""## Comparison of the five method families
+
+| Method | Object | Typical output | Exact? | Main choice | Causal by itself? |
+|---|---|---|---|---|---|
+| Laspeyres/Paasche/Fisher | price–quantity value ratio | price and quantity indexes | Fisher passes factor reversal | weights/base/chaining | no |
+| LMDI | positive multiplicative identity | additive or multiplicative factor effects | yes | factorization and zero handling | no |
+| PVM | revenue identity | price, volume, mix, interaction | yes under declared rule | interaction convention | no |
+| shift–share | benchmarked segment growth | overall, mix, local shift | yes | benchmark and base period | no |
+| SDA | matrix structural identity | technology/demand/etc. effects | yes under polar/path rule | determinant order and aggregation | no |
+
+## Econometric point of view
+
+These methods primarily transform observed aggregates or estimated accounting objects. They do not estimate behavioral parameters merely because a component is called price, intensity, competitiveness, or technology.
+
+- A price contribution is not an elasticity.
+- A local shift is not a treatment effect.
+- An LMDI factor is not a structural coefficient.
+- An SDA technology effect is not automatically policy-invariant.
+
+Sampling uncertainty matters when inputs are survey estimates, noisy rates, forecasts, or estimated matrices. Use bootstrap, delta-method, or simulation procedures appropriate to how those inputs were generated. Identification uncertainty cannot be repaired by a zero algebraic residual."""),
 md(r"""## Limitations and robustness
 
-- Standard LMDI requires positive values; zeros need documented limiting conventions and negative values can invalidate logs.
-- Identity decompositions are sensitive to the chosen factorization: CTR×CVR and clicks×orders-per-click are algebraically related but tell different stories.
-- Chained indexes reduce base-period staleness but introduce chain drift and revisions.
-- PVM “mix” is often mislabeled: changing product shares, pure volume, and interaction should be separated.
-- SDA is computationally expensive as determinants grow and inherits input–output measurement error.
-- None of these methods corrects endogeneity, anticipatory behavior, ad auctions, or cross-channel substitution.
+- Run bilateral and chained index variants and disclose revisions, entry/exit rules, and quality adjustment.
+- For LMDI, document zero handling; logarithms require positive values and negative totals can be inadmissible.
+- For PVM, compare explicit-interaction, base-weighted, and symmetric allocations.
+- For shift–share, repeat with credible benchmarks, base periods, and classifications.
+- For SDA, compare the two polar decompositions, their average, and all-order results when feasible.
+- Stress-test factorization and aggregation level across every identity method.
+- None corrects endogeneity, anticipation, auction feedback, substitution, or interference without a separate econometric/causal design.
 
 ## What came next
 
-**Diewert (1976)** formalized exact and superlative indexes, including Fisher's desirable approximation properties. For energy/environment identities, **Ang & Choi (1997)** introduced a refined logarithmic-mean Divisia method; **Ang (2005)** consolidated the preferred LMDI formulation, and **Ang (2015)** provided a practical guide. In structural decomposition, **Dietzenbacher & Los (1998)** showed why averaging polar forms or all paths matters when multiple determinants change.""")],
+**Diewert (1976)** formalized exact and superlative indexes. **Ang & Choi (1997)** refined the logarithmic-mean Divisia method; **Ang (2005, 2015)** consolidated LMDI theory and implementation. **Esteban-Marquillas (1972)** introduced a homothetic refinement of shift–share, while later dynamic and spatial variants addressed changing weights and dependence. In SDA, **Rose & Casler (1996)** reviewed the field and **Dietzenbacher & Los (1998)** demonstrated sensitivity to polar forms and advocated averaging paths. Modern work connects these allocation problems to Shapley and structural path methods, but exact attribution remains distinct from causal identification.""")],
 
 '03_oaxaca_reweighting_rif.ipynb': [
 md(r"""## Threefold decomposition and identification
@@ -646,29 +1092,62 @@ md(r"""## Limitations and robustness
 **Juhn, Murphy & Pierce (1993)** decomposed distributional changes using residual ranks. **DiNardo, Fortin & Lemieux (1996)** constructed counterfactual densities via reweighting. **Machado & Mata (2005)** used quantile regression for counterfactual distributions. **Firpo, Fortin & Lemieux (2009)** introduced RIF regression for unconditional distributional statistics, and **Fortin, Lemieux & Firpo (2011)** unified the modern decomposition toolkit and clarified identification.""")],
 
 '04_shapley_anova_ml.ipynb': [
-md(r"""## Conditional, marginal, and causal games
+md(r"""## 1. Shapley value: derivation, axioms, and proof of efficiency
 
-For a prediction model $f$ and explained point $x$, common coalition games include
+### The allocation problem
 
-$$v_{\text{cond}}(S)=E[f(X)\mid X_S=x_S],$$
+Let $N=\{1,\ldots,p\}$ be a set of players and let $v:2^N\rightarrow\mathbb R$ be a value function. Usually $v(\varnothing)=0$; if it is not, allocate the surplus $v(N)-v(\varnothing)$. For player $j$, the marginal contribution after coalition $S$ is
 
-and
+$$\Delta_j(S)=v(S\cup\{j\})-v(S),\qquad j\notin S.$$
 
-$$v_{\text{marg}}(S)=E_{X_{-S}}[f(x_S,X_{-S})].$$
+Shapley's idea is to imagine that players enter in a random order. If $S$ is the set appearing before $j$, then $j$ receives $\Delta_j(S)$. Averaging over all $p!$ orders gives
 
-The conditional game respects observed dependence but may assign credit to a feature unused by $f$ through correlation. The marginal/interventional game breaks dependence and can evaluate unrealistic combinations. A causal game would instead be defined from an SCM, for example $v_{\text{causal}}(S)=E[Y\mid do(X_S=x_S)]$; it is a different estimand, not a switch in plotting software.
+$$\phi_j(v)=\frac{1}{p!}\sum_{\pi}
+\left[v(P_j^\pi\cup\{j\})-v(P_j^\pi)\right],$$
 
-Computing exact Shapley values costs $O(2^p)$ coalition evaluations (or $p!$ paths); practical SHAP methods exploit model structure or Monte Carlo approximation."""),
-md(r"""## Growth-marketing case: churn and conversion models
+where $P_j^\pi$ is the predecessor set of $j$ in permutation $\pi$.
 
-Use SHAP to debug a fitted churn or conversion model, detect leakage, compare segments, and explain why the model scored a user highly. Do not use it to rank budget interventions unless the model and coalition game encode the intervention process.
+The same predecessor set $S$ occurs in $|S|!(p-|S|-1)!$ permutations: members of $S$ can be ordered before $j$ in $|S|!$ ways and the remaining players after $j$ in $(p-|S|-1)!$ ways. Grouping permutations by predecessor set yields the familiar coalition formula
 
-Examples of traps:
+$$\boxed{\phi_j(v)=\sum_{S\subseteq N\setminus\{j\}}
+\frac{|S|!(p-|S|-1)!}{p!}\,[v(S\cup\{j\})-v(S)]}.$$
 
-- `discount_seen` is post-treatment and can dominate prediction without being an actionable cause.
-- channel and geography are correlated; conditional and marginal SHAP answer different questions.
-- aggregating $|\phi_j|$ hides direction and can favor high-cardinality/noisy features.
-- background data from last quarter makes attribution drift when the user mix changes."""),
+### Why the allocations sum to the total
+
+For any fixed order $\pi=(\pi_1,\ldots,\pi_p)$, successive marginal contributions telescope:
+
+$$\sum_{k=1}^p\left[v(\{\pi_1,\ldots,\pi_k\})
+-v(\{\pi_1,\ldots,\pi_{k-1}\})\right]=v(N)-v(\varnothing).$$
+
+Averaging an equality over all permutations preserves it, so
+
+$$\boxed{\sum_{j=1}^p\phi_j(v)=v(N)-v(\varnothing)}.$$
+
+This is **efficiency**, not causality.
+
+### Characterizing axioms
+
+Shapley (1953) showed that the allocation is uniquely characterized by:
+
+1. **Efficiency:** all surplus is allocated.
+2. **Symmetry:** players with identical marginal contributions receive the same value.
+3. **Dummy/null player:** if $j$ never changes $v(S)$, then $\phi_j=0$.
+4. **Additivity:** for games $v$ and $u$, $\phi(v+u)=\phi(v)+\phi(u)$.
+
+A proof sketch uses unanimity games $u_T(S)=\mathbf 1\{T\subseteq S\}$ as a basis for all set functions. Symmetry, efficiency, and the dummy axiom force each member of $T$ to receive $1/|T|$ in $u_T$; additivity then determines the value uniquely for any linear combination of unanimity games."""),
+md(r"""## Shapley application: interacting growth drivers
+
+For
+
+$$\text{Revenue}=\text{Traffic}\times\text{CVR}\times\text{Price},$$
+
+the factors interact: the value of an extra conversion-rate point depends on traffic and price. A one-order replacement gives the interaction to whichever factor arrives later. Shapley averages every order, creating a symmetric exact allocation.
+
+The business value function must still be declared. Here,
+
+$$v(S)=R(x_S^1,x_{-S}^0)-R(x^0),$$
+
+where drivers in $S$ use current values and the rest use baseline values. This is a descriptive hybrid game. It does not represent $E[R\mid do(X_S=x_S^1)]$."""),
 code(r"""# Baseline sensitivity of the revenue Shapley allocation
 def shapley_between(baseline, target):
     def v(S):
@@ -684,19 +1163,245 @@ def shapley_between(baseline, target):
 alt={'traffic':900.,'conversion':.045,'price':52.}
 pd.DataFrame({'original baseline':shapley_between(base,current),
               'alternative baseline':shapley_between(alt,current)})"""),
+md(r"""### Interpreting the baseline-sensitivity result
+
+Both columns satisfy efficiency relative to their own baseline, yet the driver allocations differ materially. Shapley removes arbitrary **order** dependence after a game is defined; it does not remove dependence on the baseline, value function, unit of analysis, or data-generating model.
+
+For growth reporting, disclose the baseline (previous month, budget, forecast, control group, or long-run mean) and show sensitivity to plausible alternatives."""),
+md(r"""## 2. Aumann–Shapley: continuous-path attribution
+
+Shapley treats players as discrete entrants. Aumann–Shapley extends the allocation idea to continuously divisible factors. Let $F:\mathbb R^p\rightarrow\mathbb R$ be differentiable, with baseline $x^0$ and target $x^1$. Along the straight-line path
+
+$$x(t)=x^0+t(x^1-x^0),\qquad 0\le t\le1,$$
+
+the Aumann–Shapley contribution of coordinate $j$ is
+
+$$\boxed{AS_j=(x_j^1-x_j^0)\int_0^1
+\frac{\partial F(x(t))}{\partial x_j}\,dt}.$$
+
+The chain rule proves efficiency:
+
+$$\frac{dF(x(t))}{dt}=
+\sum_j\frac{\partial F(x(t))}{\partial x_j}(x_j^1-x_j^0).$$
+
+Integrating from 0 to 1 gives
+
+$$F(x^1)-F(x^0)=\sum_j AS_j.$$
+
+Unlike the discrete Shapley value, Aumann–Shapley depends on a continuous path. The straight line is conventional; a different path can produce a different allocation when interactions are present.
+
+For a two-factor product $F(x_1,x_2)=x_1x_2$, integration gives
+
+$$AS_1=\Delta x_1\left(x_2^0+\frac{\Delta x_2}{2}\right),\qquad
+AS_2=\Delta x_2\left(x_1^0+\frac{\Delta x_1}{2}\right),$$
+
+which is exactly the equal-interaction split seen in Kitagawa for one product term."""),
+code(r"""# Numerical Aumann–Shapley allocation along a straight line.
+def revenue_vector(x):
+    return x[0] * x[1] * x[2]
+
+def revenue_gradient(x):
+    traffic, cvr, price = x
+    return np.array([cvr*price, traffic*price, traffic*cvr])
+
+x0 = np.array([base['traffic'], base['conversion'], base['price']])
+x1 = np.array([current['traffic'], current['conversion'], current['price']])
+grid = np.linspace(0, 1, 20_001)
+path_points = x0[None, :] + grid[:, None] * (x1-x0)[None, :]
+gradients = np.array([revenue_gradient(point) for point in path_points])
+average_gradient = np.trapezoid(gradients, grid, axis=0)
+as_contributions = (x1-x0) * average_gradient
+
+pd.Series({
+    'traffic': as_contributions[0],
+    'conversion': as_contributions[1],
+    'price': as_contributions[2],
+    'allocated': as_contributions.sum(),
+    'observed': revenue_vector(x1)-revenue_vector(x0),
+})"""),
+md(r"""### Aumann–Shapley applications and limitations
+
+Applications include allocating continuously varying costs, emissions, revenue, and risk. In growth analytics it is useful when drivers such as traffic, CVR, and AOV are naturally continuous and gradients are available.
+
+- It requires a differentiable function or a numerical gradient.
+- The path may pass through unrealistic business states.
+- Results change with path choice unless the differential allocation is path-independent in the relevant sense.
+- It attributes a finite change; it does not estimate a behavioral derivative or causal elasticity merely because derivatives appear in the formula.
+- Numerical integration adds approximation error, which should be checked by refining the grid.
+
+The displayed `allocated` and `observed` values coincide up to numerical error, verifying the line-integral identity."""),
+md(r"""## 3. Functional ANOVA: decomposing a function and its variance
+
+Functional ANOVA answers a different question. Instead of allocating one finite change, it decomposes a square-integrable function $f(X)$ into main effects and interactions relative to an input distribution.
+
+For independent inputs $X=(X_1,\ldots,X_p)$,
+
+$$f(X)=f_\varnothing+\sum_j f_j(X_j)
++\sum_{j<k}f_{jk}(X_j,X_k)+\cdots+f_{1\cdots p}(X).$$
+
+The components are defined recursively:
+
+$$f_\varnothing=E[f(X)],$$
+
+$$f_j(x_j)=E[f(X)\mid X_j=x_j]-f_\varnothing,$$
+
+$$f_{jk}(x_j,x_k)=E[f(X)\mid X_j=x_j,X_k=x_k]
+-f_j(x_j)-f_k(x_k)-f_\varnothing,$$
+
+and analogously for higher orders by subtracting all lower-order terms.
+
+Under the product measure induced by independent inputs, each nonempty component integrates to zero over any of its arguments. Consequently distinct components are orthogonal:
+
+$$E[f_S(X_S)f_T(X_T)]=0\quad(S\ne T).$$
+
+Orthogonality yields the variance decomposition
+
+$$\boxed{\operatorname{Var}(f(X))=
+\sum_{\varnothing\ne S\subseteq N}V_S},\qquad
+V_S=\operatorname{Var}(f_S(X_S)).$$
+
+Sobol indices normalize these components:
+
+$$S_j=\frac{V_j}{\operatorname{Var}(f(X))},\qquad
+S_j^{\text{total}}=
+\frac{\sum_{S\ni j}V_S}{\operatorname{Var}(f(X))}.$$
+
+Functional ANOVA is therefore global and distribution-dependent. It is not the same object as a local Shapley explanation."""),
+code(r"""# Exact functional ANOVA for f(x1,x2)=x1+x2+2*x1*x2,
+# with independent, centered Uniform(-1,1) inputs.
+n_anova = 300_000
+x_anova = rng.uniform(-1, 1, size=(n_anova, 2))
+x_1, x_2 = x_anova[:, 0], x_anova[:, 1]
+
+f_empty = 0.0
+f_1 = x_1
+f_2 = x_2
+f_12 = 2*x_1*x_2
+f_total = f_empty + f_1 + f_2 + f_12
+
+variance_components = pd.Series({
+    'V1 main effect': np.var(f_1),
+    'V2 main effect': np.var(f_2),
+    'V12 interaction': np.var(f_12),
+})
+anova_summary = pd.DataFrame({
+    'variance': variance_components,
+    'share': variance_components / np.var(f_total),
+})
+anova_summary.loc['sum of components'] = anova_summary.sum()
+anova_summary.loc['observed Var(f)'] = [np.var(f_total), 1.0]
+anova_summary"""),
+md(r"""### Reading and applying functional ANOVA
+
+For independent centered inputs, the main effects $x_1$ and $x_2$ and interaction $2x_1x_2$ are orthogonal. The Monte Carlo sum of component variances is therefore close to the observed variance of $f$; the small discrepancy is simulation error.
+
+Growth applications include determining whether variation in predicted conversion is dominated by acquisition channel, user intent, pricing, or interactions; screening simulator inputs; and diagnosing whether a KPI model is mostly additive.
+
+Limitations:
+
+- Classical uniqueness and orthogonality rely on a chosen product measure and usually independent inputs.
+- With dependent features, several generalized decompositions exist and answer different questions.
+- A large variance share means the feature explains model-output variability under the chosen distribution, not that intervening on it produces a large effect.
+- Estimates require integration or Monte Carlo sampling; rare but important regions can be missed.
+- Results change when the reference population or input distribution changes."""),
+md(r"""## 4. SHAP: Shapley values for model predictions
+
+SHAP does not introduce a new cooperative-game solution; it specifies games for explaining a fitted prediction $f(x)$. An additive explanation has the form
+
+$$g(z')=\phi_0+\sum_{j=1}^p\phi_jz'_j,$$
+
+where $z'_j=1$ means feature $j$ is present. **Local accuracy** requires
+
+$$f(x)=\phi_0+\sum_j\phi_j.$$
+
+Usually $\phi_0=E[f(X)]$, so the feature values allocate
+
+$$f(x)-E[f(X)].$$
+
+The crucial scientific choice is the coalition value. Two common definitions are
+
+$$v_{\text{cond}}(S)=E[f(X)\mid X_S=x_S]$$
+
+and
+
+$$v_{\text{marg}}(S)=E_{X_{-S}}[f(x_S,X_{-S})].$$
+
+The conditional game respects observed dependence but can give attribution to a feature unused by the model because it carries information about another feature. The marginal game evaluates the model after breaking dependence and may create implausible feature combinations.
+
+A causal game is different:
+
+$$v_{\text{causal}}(S)=E[Y\mid do(X_S=x_S)].$$
+
+It requires a structural causal model or identified intervention distribution. Calling marginal SHAP “interventional” in software does not by itself make it causal.
+
+### Linear-model special case
+
+If $f(x)=\beta_0+\sum_j\beta_jx_j$ and the marginal game uses background means $\mu_j=E[X_j]$, then
+
+$$\boxed{\phi_j=\beta_j(x_j-\mu_j)},\qquad
+\phi_0=\beta_0+\sum_j\beta_j\mu_j.$$
+
+This follows because the marginal contribution of feature $j$ is the same for every coalition, so averaging does not change it."""),
+code(r"""# Verify local accuracy for marginal SHAP in a linear conversion model.
+feature_names = ['intent_score', 'sessions', 'discount']
+beta = np.array([0.30, 0.08, 0.45])
+intercept = -1.20
+background_mean = np.array([0.0, 3.0, 0.10])
+customer = np.array([1.2, 5.0, 0.25])
+
+baseline_prediction = intercept + background_mean @ beta
+customer_prediction = intercept + customer @ beta
+linear_shap = beta * (customer-background_mean)
+
+pd.Series({
+    'base value E[f(X)]': baseline_prediction,
+    **dict(zip(feature_names, linear_shap)),
+    'base + SHAP': baseline_prediction + linear_shap.sum(),
+    'model prediction f(x)': customer_prediction,
+})"""),
+md(r"""## Growth-marketing uses of SHAP—and defensible language
+
+Appropriate uses include:
+
+- explaining why a churn or conversion model scored a user above its background expectation;
+- detecting leakage, such as `discount_seen` measured after treatment;
+- comparing model behavior across cohorts or acquisition channels;
+- identifying nonlinearities and interactions that deserve model or product investigation;
+- monitoring explanation drift when the background population changes.
+
+Defensible statement:
+
+> Relative to the declared background dataset, the fitted model assigns +0.067 probability points to recent sessions for this user.
+
+Unsupported statement without causal identification:
+
+> Increasing sessions will cause conversion to rise by 0.067.
+
+Additional traps include correlated channel and geography features, aggregation of $|\phi_j|$ that hides direction, poorly calibrated predictions, and post-treatment features that are predictive but not valid intervention levers."""),
+md(r"""## Comparison of the four methods
+
+| Method | Object decomposed | Output | Exactness | Main reference choice | Causal by itself? |
+|---|---|---|---|---|---|
+| Shapley | discrete coalition value $v(S)$ | allocation of $v(N)-v(\varnothing)$ | exact | value function/baseline | no |
+| Aumann–Shapley | differentiable finite change $F(x^1)-F(x^0)$ | path-integrated contributions | exact up to numerical integration | baseline, target, path | no |
+| Functional ANOVA | function $f(X)$ under a distribution | main/interaction functions and variance shares | exact in population | input distribution/dependence structure | no |
+| SHAP | fitted prediction relative to background | local feature attributions | locally exact for chosen game | model, background, missing-feature semantics | no |
+
+The common theme is allocation. The mathematical objects, reference choices, and permissible interpretations are different."""),
 md(r"""## Limitations and robustness
 
-- Attribution is model-specific; a misspecified or poorly calibrated model can be explained perfectly.
-- Results depend on baseline/background distribution and missing-feature semantics.
-- Correlated features make credit allocation scientifically ambiguous.
-- Exactness/efficiency does not imply stability; report Monte Carlo error and variation across folds/seeds/background samples.
-- Global mean absolute SHAP is not a causal elasticity and not necessarily useful for intervention.
-- Functional ANOVA orthogonality depends on the input measure; dependent inputs complicate uniqueness.
-- Validate predictive performance out of sample, test leakage, group collinear features, and compare conditional versus marginal games.
+- **Shapley:** exponential exact computation, value-function dependence, and no canonical baseline.
+- **Aumann–Shapley:** differentiability and path dependence; numerical integration error.
+- **Functional ANOVA:** distribution dependence and complications under correlated inputs.
+- **SHAP:** model, background, and missing-feature dependence; predictive explanation can be mistaken for intervention effect.
+- For approximate allocations, report Monte Carlo or numerical error in addition to sampling uncertainty.
+- Repeat results across plausible baselines/background samples, group strongly collinear variables, and examine stability across model folds and seeds.
+- Validate model discrimination and calibration before explaining predictions.
+- Never infer causal leverage from attribution magnitude alone.
 
 ## What came next
 
-**Lundberg & Lee (2017)** connected additive feature attribution to Shapley values. **Lundberg et al. (2020)** developed TreeSHAP-based explanations for tree ensembles. **Aas, Jullum & Løland (2021)** addressed dependent features with conditional distributions. **Sundararajan & Najmi (2020)** clarified the many distinct “Shapley” games, while **Heskes et al. (2020)** and related work developed causal Shapley values using explicit causal structure.""")],
+**Aumann & Shapley (1974)** extended discrete cooperative-game allocation to nonatomic/continuous settings. **Hoeffding (1948)** supplied an early orthogonal decomposition underlying functional ANOVA; **Sobol' (1993)** developed variance-based global sensitivity indices. **Lundberg & Lee (2017)** connected additive feature attribution to Shapley values, and **Lundberg et al. (2020)** developed efficient TreeSHAP explanations. **Aas, Jullum & Løland (2021)** addressed dependent features. **Sundararajan & Najmi (2020)** clarified that different coalition games produce different Shapley explanations, while **Heskes et al. (2020)** incorporated explicit causal structure.""")],
 
 '05_econometrics_causality_driver_trees.ipynb': [
 md(r"""## Econometric estimands behind common methods
@@ -753,15 +1458,21 @@ ADDITIONAL_REFS = {
 - Juhn, C., Murphy, K. M., & Pierce, B. (1993). Wage inequality and the rise in returns to skill. *Journal of Political Economy*, 101, 410–442. https://doi.org/10.1086/261881
 - Fortin, N., Lemieux, T., & Firpo, S. (2011). Decomposition methods in economics. In *Handbook of Labor Economics*, Vol. 4A, 1–102. https://doi.org/10.1016/S0169-7218(11)00407-2
 - Lundberg, S. M., & Lee, S.-I. (2017). A unified approach to interpreting model predictions. *NeurIPS 30*, 4765–4774. https://papers.nips.cc/paper/7062
+- Holland, P. W. (1986). Statistics and causal inference. *JASA*, 81, 945–960. https://doi.org/10.1080/01621459.1986.10478354
+- Imbens, G. W., & Rubin, D. B. (2015). *Causal Inference for Statistics, Social, and Biomedical Sciences*. Cambridge University Press. https://doi.org/10.1017/CBO9781139025751
+- Hernán, M. A., & Robins, J. M. (2020). *Causal Inference: What If*. Chapman & Hall/CRC. https://www.hsph.harvard.edu/miguel-hernan/causal-inference-book/
 """,
 '01_rates_kitagawa_dasgupta.ipynb': r"""
 - Das Gupta, P. (1993). *Standardization and Decomposition of Rates: A User's Manual*. U.S. Census Bureau.
 - Shorrocks, A. F. (2013). Decomposition procedures for distributional analysis. *Journal of Economic Inequality*, 11, 99–126. https://doi.org/10.1007/s10888-011-9214-z
 """,
 '02_index_numbers_lmdi_pvm_sda.ipynb': r"""
+- Balk, B. M. (2008). *Price and Quantity Index Numbers: Models for Measuring Aggregate Change and Difference*. Cambridge University Press. https://doi.org/10.1017/CBO9780511720758
 - Ang, B. W., & Choi, K.-H. (1997). Decomposition of aggregate energy and gas emission intensities for industry: A refined Divisia index method. *The Energy Journal*, 18(3), 59–73.
 - Ang, B. W. (2015). LMDI decomposition approach: A guide for implementation. *Energy Policy*, 86, 233–238. https://doi.org/10.1016/j.enpol.2015.07.007
+- Esteban-Marquillas, J. M. (1972). A reinterpretation of shift-share analysis. *Regional and Urban Economics*, 2, 249–255. https://doi.org/10.1016/0034-3331(72)90033-4
 - Dietzenbacher, E., & Los, B. (1998). Structural decomposition techniques: Sense and sensitivity. *Economic Systems Research*, 10, 307–324. https://doi.org/10.1080/09535319800000023
+- Miller, R. E., & Blair, P. D. (2009). *Input–Output Analysis: Foundations and Extensions* (2nd ed.). Cambridge University Press. https://doi.org/10.1017/CBO9780511626982
 """,
 '03_oaxaca_reweighting_rif.ipynb': r"""
 - Juhn, C., Murphy, K. M., & Pierce, B. (1993). Wage inequality and the rise in returns to skill. *Journal of Political Economy*, 101, 410–442. https://doi.org/10.1086/261881
@@ -769,6 +1480,8 @@ ADDITIONAL_REFS = {
 - Fortin, N., Lemieux, T., & Firpo, S. (2011). Decomposition methods in economics. In *Handbook of Labor Economics*, Vol. 4A, 1–102. https://doi.org/10.1016/S0169-7218(11)00407-2
 """,
 '04_shapley_anova_ml.ipynb': r"""
+- Sobol', I. M. (1993). Sensitivity estimates for nonlinear mathematical models. *Mathematical Modelling and Computational Experiments*, 1, 407–414.
+- Owen, A. B. (2014). Sobol' indices and Shapley value. *SIAM/ASA Journal on Uncertainty Quantification*, 2, 245–251. https://doi.org/10.1137/130936233
 - Lundberg, S. M. et al. (2020). From local explanations to global understanding with explainable AI for trees. *Nature Machine Intelligence*, 2, 56–67. https://doi.org/10.1038/s42256-019-0138-9
 - Sundararajan, M., & Najmi, A. (2020). The many Shapley values for model explanation. *ICML 2020*, PMLR 119, 9269–9278. https://proceedings.mlr.press/v119/sundararajan20b.html
 - Aas, K., Jullum, M., & Løland, A. (2021). Explaining individual predictions when features are dependent. *Artificial Intelligence*, 298, 103502. https://doi.org/10.1016/j.artint.2021.103502
@@ -835,7 +1548,7 @@ How can a change in a total generated by several multiplicative factors be alloc
 
 ### Prerequisites
 
-Products, logarithms, and before/after comparisons. No calculus is required to run the examples; the Divisia differential is included to explain the origin of LMDI.
+Products, logarithms, matrix multiplication, and before/after comparisons. Differential and matrix arguments are derived explicitly; the Python examples require only basic NumPy and pandas usage.
 
 ### Symbols
 
@@ -845,7 +1558,7 @@ Products, logarithms, and before/after comparisons. No calculus is required to r
 - $L(a,b)$: logarithmic mean, a symmetric weight between positive $a$ and $b$.
 - $p_{it},q_{it}$: price and quantity in PVM/index-number notation.
 
-The notebook treats LMDI and PVM separately because both decompose identities but allocate interactions differently.""",
+The sequence moves from scalar indexes to exact multiplicative decomposition, business revenue bridges, benchmark-relative growth, and finally matrix systems. Each method receives a separate derivation because their outputs are not interchangeable.""",
 '03_oaxaca_reweighting_rif.ipynb': r"""## Roadmap and notation
 
 ### Guiding question
@@ -876,7 +1589,7 @@ When several factors interact, what principled rule can allocate a total change 
 
 ### Prerequisites
 
-Sets and averages. Knowledge of machine learning is useful only for the SHAP section.
+Sets, averages, conditional expectations, partial derivatives, and basic variance. The line-integral and orthogonality arguments are derived explicitly, so prior game theory is not required.
 
 ### Symbols
 
@@ -886,7 +1599,7 @@ Sets and averages. Knowledge of machine learning is useful only for the SHAP sec
 - $v(S\cup\{j\})-v(S)$: marginal contribution of player $j$ after $S$.
 - $\phi_j$: Shapley allocation to player $j$.
 
-We begin with an exact business identity. Only afterward do we map the same allocation logic to model explanations, where the definition of $v(S)$ becomes a substantive modeling choice.""",
+The sequence is deliberate: discrete allocation (Shapley), continuous allocation (Aumann–Shapley), global function/variance decomposition (functional ANOVA), and prediction explanation (SHAP). Their shared vocabulary should not obscure that they decompose different mathematical objects.""",
 '05_econometrics_causality_driver_trees.ipynb': r"""## Roadmap and notation
 
 ### Guiding question
@@ -944,7 +1657,8 @@ SUMMARIES = {
 
 1. Always name the target, contrast, and allocation rule.
 2. Exact contributions need not be unique or causal.
-3. Choose a method by the mathematical object, not by dashboard terminology.
+3. A descriptive hybrid holds factors fixed by convention; a causal counterfactual compares well-defined interventions and requires identification.
+4. Choose a method by the mathematical object, not by dashboard terminology.
 
 Notebook 01 now specializes this framework to the simplest important object: an aggregate rate formed as a weighted average of segment rates.""",
 '01_rates_kitagawa_dasgupta.ipynb': r"""## Takeaways and bridge to Notebook 02
@@ -957,10 +1671,13 @@ Notebook 01 now specializes this framework to the simplest important object: an 
 Notebook 02 moves from weighted rates to totals generated by multiplicative business identities.""",
 '02_index_numbers_lmdi_pvm_sda.ipynb': r"""## Takeaways and bridge to Notebook 03
 
-1. LMDI gives an exact decomposition for positive multiplicative data.
-2. PVM and index-number methods differ mainly in weighting and interaction allocation.
-3. Factorization is a modeling choice, even when the identity is exact.
-4. These are descriptive contributions, not elasticities or incrementality estimates.
+1. Index numbers summarize relative price and quantity change under declared weighting systems.
+2. LMDI gives an exact additive or multiplicative allocation for positive factorized data.
+3. PVM requires an explicit definition of genuine mix and an interaction convention.
+4. Shift–share is an exact benchmark decomposition; its competitive term is descriptive.
+5. SDA extends identity decomposition to interdependent matrix systems and remains path-sensitive.
+6. Factorization, aggregation, baseline, and benchmark are modeling choices even when the residual is zero.
+7. None of these contributions is an elasticity or incremental causal effect by itself.
 
 Notebook 03 changes the target from an accounting total to a gap estimated from individual-level regressions.""",
 '03_oaxaca_reweighting_rif.ipynb': r"""## Takeaways and bridge to Notebook 04
@@ -973,10 +1690,12 @@ Notebook 03 changes the target from an accounting total to a gap estimated from 
 Notebook 04 replaces reference-coefficient choices with an axiomatic rule that averages marginal contributions over coalitions.""",
 '04_shapley_anova_ml.ipynb': r"""## Takeaways and bridge to Notebook 05
 
-1. Shapley values solve an allocation problem once the game $v(S)$ is fixed.
-2. Efficiency and symmetry do not remove baseline or model dependence.
-3. SHAP explains predictions under a chosen missing-feature semantics.
-4. Predictive attribution is not intervention effect.
+1. Shapley uniquely allocates a discrete coalition surplus under its four axioms once $v(S)$ is fixed.
+2. Aumann–Shapley allocates a continuous finite change by integrating gradients along a declared path.
+3. Functional ANOVA decomposes a function and, under orthogonality, its variance relative to an input distribution.
+4. SHAP applies a Shapley game to fitted predictions under declared background and missing-feature semantics.
+5. Efficiency does not remove baseline, path, distribution, or model dependence.
+6. None of the four methods identifies an intervention effect without additional causal structure.
 
 Notebook 05 completes the course by defining the additional assumptions and research designs needed for causal claims.""",
 '05_econometrics_causality_driver_trees.ipynb': r"""## Final takeaways
@@ -999,9 +1718,9 @@ for filename, cells in notebooks.items():
     examples = [c for c in examples if c is not exercise]
     deep = ENRICHMENTS[filename]
     if filename == '00_field_map.ipynb':
-        formal, application, limits_next = deep
+        formal, *middle_sections, limits_next = deep
         cells[:] = [title, md(ORIENTATION[filename]), theory, formal, setup,
-                    *examples, md(RESULT_GUIDES[filename]), application,
+                    *examples, md(RESULT_GUIDES[filename]), *middle_sections,
                     limits_next, md(SUMMARIES[filename]), exercise,
                     checklist, references]
     else:
