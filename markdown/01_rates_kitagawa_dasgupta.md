@@ -31,25 +31,48 @@ Weighted averages and percentage-point changes. Notebook 00's distinction betwee
 
 We first establish the identity, then calculate it, interpret the output, and finally test whether the answer changes when segments are aggregated.
 
-## Setup
+## Kitagawa identity: intuition
 
 For group $g$, the aggregate rate is $R_t=\sum_g w_{gt}r_{gt}$. Kitagawa's symmetric allocation is
 $$C_w=\sum_g(w_{g1}-w_{g0})(r_{g1}+r_{g0})/2,$$
 $$C_r=\sum_g(r_{g1}-r_{g0})(w_{g1}+w_{g0})/2.$$
 Then $C_w+C_r=R_1-R_0$ exactly. These are composition and within-group-rate components—not causal effects. Das Gupta generalized standardization to several factors. Stepwise replacement is exact but generally order-dependent; averaging all orders produces a Shapley-style symmetric allocation.
 
-## Derivation and interaction allocation
+## Kitagawa: derivation and proof of exactness
 
-For one segment, write $w_1=w_0+\Delta w$ and $r_1=r_0+\Delta r$:
+We want to decompose the change in the aggregate rate
 
-$$\Delta(wr)=r_0\Delta w+w_0\Delta r+\Delta w\Delta r.$$
+$$R_t=\sum_{g=1}^{G}w_{gt}r_{gt},\qquad \sum_{g=1}^{G}w_{gt}=1.$$
 
-Kitagawa splits the interaction equally:
+Define $\Delta w_g=w_{g1}-w_{g0}$ and $\Delta r_g=r_{g1}-r_{g0}$. For one segment,
 
-$$C_w=\Delta w\left(r_0+\frac{\Delta r}{2}\right),\qquad
-C_r=\Delta r\left(w_0+\frac{\Delta w}{2}\right).$$
+$$w_{g1}r_{g1}-w_{g0}r_{g0}
+=(w_{g0}+\Delta w_g)(r_{g0}+\Delta r_g)-w_{g0}r_{g0}.$$
 
-Summing over $g$ yields exactness. The half-interaction rule is symmetric under exchanging periods, but it is an allocation convention—not an empirical discovery. With $K$ changing factors, stepwise replacement produces $K!$ paths; averaging their marginal increments is order-invariant and closely related to the Shapley value.
+Expanding the product gives
+
+$$w_{g1}r_{g1}-w_{g0}r_{g0}
+=r_{g0}\Delta w_g+w_{g0}\Delta r_g+\Delta w_g\Delta r_g.$$
+
+The first term is a pure mix change evaluated at the baseline rate; the second is a pure rate change evaluated at the baseline share; the third is an interaction because both quantities changed. Kitagawa allocates half of that interaction to each component:
+
+$$C_{w,g}=r_{g0}\Delta w_g+\frac12\Delta w_g\Delta r_g
+=\Delta w_g\frac{r_{g0}+r_{g1}}{2},$$
+
+$$C_{r,g}=w_{g0}\Delta r_g+\frac12\Delta w_g\Delta r_g
+=\Delta r_g\frac{w_{g0}+w_{g1}}{2}.$$
+
+Adding the two components for one segment recovers its exact observed change:
+
+$$C_{w,g}+C_{r,g}
+=r_{g0}\Delta w_g+w_{g0}\Delta r_g+\Delta w_g\Delta r_g
+=w_{g1}r_{g1}-w_{g0}r_{g0}.$$
+
+Finally, summing over all segments proves the aggregate identity:
+
+$$\boxed{R_1-R_0=\sum_g C_{w,g}+\sum_g C_{r,g}}.$$
+
+The 50/50 interaction split makes the decomposition symmetric under reversal of periods. It is a defensible convention, not a uniquely identified scientific effect.
 
 
 ```python
@@ -137,26 +160,36 @@ Let $w_{gt}$ be the traffic share of channel $g$ and $r_{gt}$ its conversion rat
 - **Rate contribution:** within-channel CVR changed.
 - **Actionable diagnostic:** split further by device, geography, landing page, or cohort, but check sparse cells and post-treatment segmentation.
 
-Example claim: “Total CVR rose 1.18 pp; under the Kitagawa two-period rule, +0.34 pp is allocated to channel mix and +0.84 pp to within-channel rates.” This is precise and descriptive. “The new campaign caused +0.84 pp” is not supported without an experiment or credible quasi-experiment.
+Example claim for the worked data: “Total CVR rose 2.51 pp; under the Kitagawa two-period rule, +1.43 pp is allocated to segment mix and +1.08 pp to within-segment rates.” This is precise and descriptive. “The new campaign caused +1.08 pp” is not supported without an experiment or credible quasi-experiment.
 
 
 ```python
-# Sensitivity to aggregation: collapse Returning and Enterprise
+# Aggregation check: collapse Returning and Enterprise.
+# The collapsed rate must be share-weighted separately in each period.
 fine = d.copy()
-fine['n0'] = fine.w0 * 10_000
-fine['n1'] = fine.w1 * 12_000
 collapsed = pd.DataFrame({
-    'segment':['New','Established'],
-    'w0':[fine.loc[0,'w0'], fine.loc[1:,'w0'].sum()],
-    'w1':[fine.loc[0,'w1'], fine.loc[1:,'w1'].sum()],
-    'r0':[fine.loc[0,'r0'], np.average(fine.loc[1:,'r0'], weights=fine.loc[1:,'w0'])],
-    'r1':[fine.loc[0,'r1'], np.average(fine.loc[1:,'r1'], weights=fine.loc[1:,'w1'])],
+    'segment': ['New', 'Established'],
+    'w0': [fine.loc[0, 'w0'], fine.loc[1:, 'w0'].sum()],
+    'w1': [fine.loc[0, 'w1'], fine.loc[1:, 'w1'].sum()],
+    'r0': [fine.loc[0, 'r0'],
+           np.average(fine.loc[1:, 'r0'], weights=fine.loc[1:, 'w0'])],
+    'r1': [fine.loc[0, 'r1'],
+           np.average(fine.loc[1:, 'r1'], weights=fine.loc[1:, 'w1'])],
 })
-collapsed['mix']=(collapsed.w1-collapsed.w0)*(collapsed.r1+collapsed.r0)/2
-collapsed['rate']=(collapsed.r1-collapsed.r0)*(collapsed.w1+collapsed.w0)/2
-pd.DataFrame({'fine':[d['mix'].sum(),d['rate'].sum()],
-              'collapsed':[collapsed['mix'].sum(),collapsed['rate'].sum()]},
-             index=['mix','rate'])
+collapsed['mix'] = (collapsed.w1-collapsed.w0)*(collapsed.r1+collapsed.r0)/2
+collapsed['rate'] = (collapsed.r1-collapsed.r0)*(collapsed.w1+collapsed.w0)/2
+
+comparison = pd.DataFrame({
+    'fine segmentation': [R0, R1, R1-R0, d['mix'].sum(), d['rate'].sum()],
+    'collapsed segmentation': [
+        (collapsed.w0*collapsed.r0).sum(),
+        (collapsed.w1*collapsed.r1).sum(),
+        (collapsed.w1*collapsed.r1).sum()-(collapsed.w0*collapsed.r0).sum(),
+        collapsed['mix'].sum(),
+        collapsed['rate'].sum(),
+    ],
+}, index=['R0','R1','total change','mix','rate'])
+comparison
 ```
 
 
@@ -180,11 +213,26 @@ pd.DataFrame({'fine':[d['mix'].sum(),d['rate'].sum()],
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>fine</th>
-      <th>collapsed</th>
+      <th>fine segmentation</th>
+      <th>collapsed segmentation</th>
     </tr>
   </thead>
   <tbody>
+    <tr>
+      <th>R0</th>
+      <td>0.1495</td>
+      <td>0.1495</td>
+    </tr>
+    <tr>
+      <th>R1</th>
+      <td>0.1746</td>
+      <td>0.1746</td>
+    </tr>
+    <tr>
+      <th>total change</th>
+      <td>0.0251</td>
+      <td>0.0251</td>
+    </tr>
     <tr>
       <th>mix</th>
       <td>0.0143</td>
@@ -201,18 +249,222 @@ pd.DataFrame({'fine':[d['mix'].sum(),d['rate'].sum()],
 
 
 
+## Is the result consistent when segments are aggregated?
+
+There are two different consistency questions.
+
+### 1. Is the aggregate rate preserved? Yes—if aggregation is done correctly
+
+For a block $H$ containing several fine segments, define
+
+$$w_{Ht}=\sum_{g\in H}w_{gt},\qquad
+r_{Ht}=\frac{\sum_{g\in H}w_{gt}r_{gt}}{w_{Ht}}.$$
+
+Then $w_{Ht}r_{Ht}=\sum_{g\in H}w_{gt}r_{gt}$. Therefore $R_0$, $R_1$, and $R_1-R_0$ are exactly unchanged after collapsing segments. A simple unweighted average of rates would fail this property.
+
+### 2. Are the mix and rate components preserved? Generally no
+
+The fine decomposition evaluates every $\Delta w_g$ against its own average rate. The collapsed decomposition first creates a changing within-block weighted rate $r_{Ht}$ and then treats that block as one segment. Variation in shares **inside** $H$ is no longer visible as mix; part of it is absorbed into the block's rate component. Thus the total remains exact, while the labels `mix` and `rate` are reallocated.
+
+This is not a coding inconsistency. It is a lack of **aggregation invariance**. The decomposition answers a question conditional on the chosen partition. Report the segmentation rule and repeat the analysis at substantively plausible levels.
+
+## Stepwise Replacement: the bridge from Kitagawa to Das Gupta
+
+Kitagawa has only two changing objects—shares and rates—and resolves their interaction by splitting it equally. When a function contains three or more changing factors, a simple alternative is to replace them **one at a time**.
+
+Let
+
+$$Y_t=F(x_{1t},x_{2t},\ldots,x_{Kt}).$$
+
+Choose one order, for example $x_1\rightarrow x_2\rightarrow\cdots\rightarrow x_K$. Define hybrid states
+
+$$z^{(0)}=(x_{10},x_{20},\ldots,x_{K0}),$$
+
+$$z^{(1)}=(x_{11},x_{20},\ldots,x_{K0}),$$
+
+$$z^{(2)}=(x_{11},x_{21},\ldots,x_{K0}),$$
+
+and continue until $z^{(K)}=(x_{11},\ldots,x_{K1})$. The contribution assigned at step $j$ is
+
+$$C_j^{(\pi)}=F\!\left(z^{(j)}\right)-F\!\left(z^{(j-1)}\right),$$
+
+where $\pi$ denotes the selected order. Adding all steps produces a telescoping sum:
+
+$$\sum_{j=1}^{K}C_j^{(\pi)}
+=\cancel{F(z^{(1)})}-F(z^{(0)})
++\cancel{F(z^{(2)})}-\cancel{F(z^{(1)})}+\cdots
++F(z^{(K)})-\cancel{F(z^{(K-1)})},$$
+
+so
+
+$$\boxed{\sum_j C_j^{(\pi)}=Y_1-Y_0}.$$
+
+Thus every stepwise path is **exact**. But when factors interact, the individual $C_j^{(\pi)}$ depend on the order $\pi$, because a factor replaced later operates on a different hybrid state.
+
+
+```python
+# One exact stepwise decomposition for Revenue = Traffic × CVR × AOV.
+stepwise_base = {'traffic': 1_000., 'cvr': .04, 'aov': 50.}
+stepwise_final = {'traffic': 1_200., 'cvr': .05, 'aov': 48.}
+
+def revenue_identity(values):
+    return values['traffic'] * values['cvr'] * values['aov']
+
+def stepwise_decomposition(base_values, final_values, order):
+    # Replace factors in `order` and return their successive increments.
+    state = base_values.copy()
+    rows = []
+    for factor in order:
+        before = revenue_identity(state)
+        state[factor] = final_values[factor]
+        after = revenue_identity(state)
+        rows.append({
+            'factor replaced': factor,
+            'value before': before,
+            'value after': after,
+            'contribution': after - before,
+        })
+    return pd.DataFrame(rows)
+
+order_a = ['traffic', 'cvr', 'aov']
+order_b = ['aov', 'cvr', 'traffic']
+path_a = stepwise_decomposition(stepwise_base, stepwise_final, order_a)
+path_b = stepwise_decomposition(stepwise_base, stepwise_final, order_b)
+
+order_comparison = pd.DataFrame({
+    'Traffic → CVR → AOV': path_a.set_index('factor replaced')['contribution'],
+    'AOV → CVR → Traffic': path_b.set_index('factor replaced')['contribution'],
+}).reindex(['traffic', 'cvr', 'aov'])
+
+path_a, order_comparison, order_comparison.sum().rename('total change')
+```
+
+
+
+
+    (  factor replaced  value before  value after  contribution
+     0         traffic    2,000.0000   2,400.0000      400.0000
+     1             cvr    2,400.0000   3,000.0000      600.0000
+     2             aov    3,000.0000   2,880.0000     -120.0000,
+                      Traffic → CVR → AOV  AOV → CVR → Traffic
+     factor replaced                                          
+     traffic                     400.0000             480.0000
+     cvr                         600.0000             480.0000
+     aov                        -120.0000             -80.0000,
+     Traffic → CVR → AOV   880.0000
+     AOV → CVR → Traffic   880.0000
+     Name: total change, dtype: float64)
+
+
+
+## Reading the Stepwise output
+
+For the order Traffic → CVR → AOV, the contributions are 400, 600, and −120. For the reverse-style order AOV → CVR → Traffic, they are 480, 480, and −80. Both columns sum to the same observed revenue change, 880.
+
+The difference is entirely due to interactions. For example, the traffic increase is worth 400 when evaluated at baseline CVR and AOV, but 480 when evaluated after CVR and AOV have already changed. Neither order is algebraically wrong; the problem is that an arbitrary order gives an arbitrary interaction allocation.
+
+This motivates Das Gupta's symmetric construction: calculate the stepwise marginal contribution along every possible order and average them.
+
+## Das Gupta: from two factors to many factors
+
+Kitagawa treats two changing objects: shares and rates. **Das Gupta (1978)** developed standardization and decomposition for a rate or function depending on several factors.
+
+Let
+
+$$F_t=F(x_{1t},x_{2t},\ldots,x_{Kt})$$
+
+and consider a replacement order $\pi$. Start with all factors at period 0. Replace them one at a time with period-1 values. The marginal contribution of factor $j$ along order $\pi$ is
+
+$$M_j^{(\pi)}=F\!\left(x^{(\pi,j,+)}\right)
+-F\!\left(x^{(\pi,j,-)}\right),$$
+
+where $x^{(\pi,j,-)}$ is the hybrid state immediately before replacing $j$ and $x^{(\pi,j,+)}$ is the state immediately after. Every path telescopes:
+
+$$\sum_{j=1}^{K}M_j^{(\pi)}=F_1-F_0.$$
+
+A symmetric contribution averages over all $K!$ orders:
+
+$$C_j=\frac{1}{K!}\sum_{\pi}M_j^{(\pi)},\qquad
+\sum_j C_j=F_1-F_0.$$
+
+This averaging removes order dependence and distributes all higher-order interactions. In modern terminology it is closely connected to a Shapley–Shorrocks allocation. Das Gupta's demographic framework also uses standardized rates to isolate factors while preserving the marginal structures relevant to the application.
+
+
+```python
+# Das Gupta / all-orders replacement for a 3-factor growth funnel.
+# Revenue per impression = CTR × post-click CVR × AOV.
+from math import factorial
+
+factor_names = ['ctr', 'post_click_cvr', 'aov']
+period0 = {'ctr': .020, 'post_click_cvr': .040, 'aov': 55.}
+period1 = {'ctr': .023, 'post_click_cvr': .037, 'aov': 58.}
+
+def funnel_value(values):
+    return values['ctr'] * values['post_click_cvr'] * values['aov']
+
+contributions = {name: 0.0 for name in factor_names}
+path_rows = []
+orders = list(permutations(factor_names))
+
+for order in orders:
+    state = period0.copy()
+    path_contributions = {}
+    for name in order:
+        before = funnel_value(state)
+        state[name] = period1[name]
+        after = funnel_value(state)
+        marginal = after - before
+        contributions[name] += marginal / len(orders)
+        path_contributions[name] = marginal
+    path_rows.append({'order': ' → '.join(order), **path_contributions})
+
+das_gupta_summary = pd.Series({
+    **contributions,
+    'allocated': sum(contributions.values()),
+    'observed': funnel_value(period1) - funnel_value(period0),
+})
+pd.DataFrame(path_rows), das_gupta_summary
+```
+
+
+
+
+    (                        order    ctr  post_click_cvr    aov
+     0  ctr → post_click_cvr → aov 0.0066         -0.0038 0.0026
+     1  ctr → aov → post_click_cvr 0.0066         -0.0040 0.0028
+     2  post_click_cvr → ctr → aov 0.0061         -0.0033 0.0026
+     3  post_click_cvr → aov → ctr 0.0064         -0.0033 0.0022
+     4  aov → ctr → post_click_cvr 0.0070         -0.0040 0.0024
+     5  aov → post_click_cvr → ctr 0.0064         -0.0035 0.0024,
+     ctr               0.0065
+     post_click_cvr   -0.0036
+     aov               0.0025
+     allocated         0.0054
+     observed          0.0054
+     dtype: float64)
+
+
+
+## Reading the Das Gupta output
+
+The first table shows that the marginal assigned to a factor changes with its replacement order; this is the interaction problem. The summary averages each factor's marginal across all six orders. `allocated` equals `observed`, so the symmetric multifactor decomposition is exact. The units are revenue per impression, because that is the function supplied to `funnel_value`.
+
+Changing the function changes the scientific question. Multiplying by impressions would decompose total revenue; keeping revenue per impression deliberately removes traffic scale and focuses on funnel efficiency.
+
 ## Limitations, robustness, and inference
 
 - Shares must sum to one in each period and segments must be defined consistently.
 - New/disappearing categories and small cells require explicit handling.
 - Results depend on segmentation; always repeat at plausible aggregation levels.
+- The total is aggregation-consistent under weighted aggregation, but the component split is generally not aggregation-invariant.
+- Das Gupta/all-orders replacement costs $K!$ paths if implemented literally; sampling permutations is needed for many factors.
 - Observed rate changes combine treatment, seasonality, selection, composition within cells, and noise.
 - For estimated rates, use a stratified bootstrap or delta method; exactness conditional on estimates is not zero sampling variance.
 - If channel is affected by treatment, conditioning on it can create post-treatment bias in a causal analysis.
 
 ## What came next
 
-**Das Gupta (1978)** extended the logic to several compositional factors. **Chevan & Sutherland (2009)** revisited Das Gupta and supplied a general algorithmic treatment. In applications with many interacting factors, averaging stepwise-replacement orders leads naturally to the axiomatic decomposition presented by **Shorrocks (2013)**.
+**Das Gupta (1978)** extended the logic to several compositional factors and later systematized it in his 1993 monograph. **Chevan & Sutherland (2009)** revisited Das Gupta and supplied a general algorithmic treatment. For many interacting factors, **Shorrocks (2013)** formalized an axiomatic all-orders decomposition that clarifies the connection to Shapley allocation.
 
 ## Takeaways and bridge to Notebook 02
 
