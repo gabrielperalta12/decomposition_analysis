@@ -1,6 +1,6 @@
 # Decomposition Analysis in Python
 
-A six-notebook graduate course covering descriptive, distributional, index-number, cooperative-game, machine-learning, and causal approaches to “drivers.” Every notebook includes LaTeX derivations, executable diagnostics, growth-marketing cases, an econometric interpretation, limitations and robustness checks, exercises, and a scholarly “what came next” roadmap.
+An eight-notebook graduate course covering descriptive, distributional, index-number, cooperative-game, machine-learning, causal, pattern-mining, and end-to-end Growth workflows. Every notebook includes LaTeX derivations, executable diagnostics, growth-marketing cases, an econometric interpretation, limitations and robustness checks, exercises, and references.
 
 ## Setup with uv
 
@@ -88,6 +88,8 @@ uv run python -m unittest discover -s tests -v
 4. `03_oaxaca_reweighting_rif.ipynb` — mean and distribution gaps
 5. `04_shapley_anova_ml.ipynb` — axiomatic and predictive attribution
 6. `05_econometrics_causality_driver_trees.ipynb` — causal boundaries and driver claims
+7. `06_subgroup_discovery_pattern_mining.ipynb` — CART, CHAID, subgroup discovery, and RuleFit for locating change
+8. `07_complete_growth_workflow.ipynb` — KPI monitoring, exact decomposition, HCD localization, experiment, and economics
 
 ## Rebuild executed notebooks
 

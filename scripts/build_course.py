@@ -621,7 +621,58 @@ A symmetric contribution averages over all $K!$ orders:
 $$C_j=\frac{1}{K!}\sum_{\pi}M_j^{(\pi)},\qquad
 \sum_j C_j=F_1-F_0.$$
 
-This averaging removes order dependence and distributes all higher-order interactions. In modern terminology it is closely connected to a Shapley–Shorrocks allocation. Das Gupta's demographic framework also uses standardized rates to isolate factors while preserving the marginal structures relevant to the application."""),
+This averaging removes order dependence and distributes all higher-order interactions. In modern terminology it is closely connected to a Shapley–Shorrocks allocation. Das Gupta's demographic framework also uses standardized rates to isolate factors while preserving the marginal structures relevant to the application.
+
+### What “multidimensional” means for an aggregate rate
+
+Suppose conversion is cross-classified by channel $i$ and device $j$. A useful sequential factorization is
+
+$$R_t=\sum_i p_{it}\sum_j q_{j\mid i,t}r_{ijt},$$
+
+where $p_{it}=P_t(\text{channel}=i)$ and $q_{j\mid i,t}=P_t(\text{device}=j\mid\text{channel}=i)$. There are now three changing blocks:
+
+1. $P$: channel composition $p$;
+2. $Q$: device-within-channel composition $q$;
+3. $R$: cell-specific conversion rates $r$.
+
+Define the hybrid standardized rate
+
+$$H(a,b,c)=\sum_i p_{i,a}\sum_j q_{j\mid i,b}r_{ij,c},\qquad a,b,c\in\{0,1\}.$$
+
+Every $H(a,b,c)$ is a coherent synthetic population: $p_{\cdot,a}$ sums to one and every conditional distribution $q_{\cdot\mid i,b}$ sums to one. The channel contribution, averaged over the six paths, can equivalently be written with subset weights:
+
+$$\begin{aligned}
+C_P={}&\frac13[H(1,0,0)-H(0,0,0)]\\
+&+\frac16[H(1,1,0)-H(0,1,0)]\\
+&+\frac16[H(1,0,1)-H(0,0,1)]\\
+&+\frac13[H(1,1,1)-H(0,1,1)].
+\end{aligned}$$
+
+$C_Q$ and $C_R$ follow by rotating the factor being replaced. The weights $1/3,1/6,1/6,1/3$ are the probabilities that zero, either one, or both of the other factors precede the target factor in a random order. Consequently,
+
+$$C_P+C_Q+C_R=H(1,1,1)-H(0,0,0).$$
+
+### The factorization is part of the estimand
+
+Writing $P(\text{channel})P(\text{device}\mid\text{channel})$ asks a different descriptive question from writing $P(\text{device})P(\text{channel}\mid\text{device})$. Both reproduce the observed joint distributions at the endpoints, but their intermediate standardized populations differ. Therefore the separate channel and device allocations need not agree. This is not an algebraic error: it is sensitivity to the declared standardization structure.
+
+If the joint cell shares $w_{ijt}$ are treated as one indivisible block, the analysis has only two factors—joint composition and cell rates—and cannot separately identify a channel-composition and device-composition component. Conversely, independently combining channel and device marginals implicitly assumes away their association and can create unrealistic hybrid cells.
+
+### Closed form for a multiplicative business identity
+
+For $F(x)=\prod_{k=1}^K x_k$, write $x_{k1}=x_{k0}+\Delta x_k$. Expansion gives one term for every nonempty interaction set $S$:
+
+$$F_1-F_0=\sum_{\varnothing\neq S\subseteq K}
+\left(\prod_{j\in S}\Delta x_j\right)
+\left(\prod_{\ell\notin S}x_{\ell0}\right).$$
+
+All-orders averaging allocates each $|S|$-way interaction equally among its participating factors. Hence
+
+$$C_j=\sum_{S\ni j}\frac{1}{|S|}
+\left(\prod_{k\in S}\Delta x_k\right)
+\left(\prod_{\ell\notin S}x_{\ell0}\right).$$
+
+For a growth identity such as revenue $=\text{traffic}\times\text{CVR}\times\text{AOV}$, this formula makes explicit where the pairwise and three-way interactions go. For a nonlinear or cross-classified rate, enumeration through $H$ is safer than trying to invent a product shortcut."""),
 code(r"""# Das Gupta / all-orders replacement for a 3-factor growth funnel.
 # Revenue per impression = CTR × post-click CVR × AOV.
 from math import factorial
@@ -706,7 +757,99 @@ Because response-category percentages sum to one, gains in some categories are b
 
 ### What the refinement does not solve
 
-It does not make category effects causal, choose theoretically relevant control variables, solve sparse cross-classified cells, or guarantee aggregation invariance. Chevan and Sutherland explicitly emphasize that any selected categorical variable will yield a result; scientific meaning depends on theoretically justified variable selection."""),
+It does not make category effects causal, choose theoretically relevant control variables, solve sparse cross-classified cells, or guarantee aggregation invariance. Chevan and Sutherland explicitly emphasize that any selected categorical variable will yield a result; scientific meaning depends on theoretically justified variable selection.
+
+### Applied templates for Chevan–Sutherland
+
+| Decision problem | Composition dimensions | Response | What category detail can reveal |
+|---|---|---|---|
+| Paid-media CVR | channel × device | purchase/no purchase | Paid Search gained mix but mobile Search lost within-cell CVR |
+| Lifecycle migration | acquisition cohort × tenure | free/trial/paid/churned | a larger young-cohort share versus worse paid retention inside mature cohorts |
+| Subscription churn | country × plan | churn/no churn | churn pressure concentrated in a plan within one market rather than a global plan effect |
+| Lead quality | source × firm size | MQL/SQL/won/lost | a source brings more volume while its distribution shifts toward low-quality states |
+| Health or labor rates | age × sex or education × region | event rate or response categories | composition shifts separated from changes within comparable cells |
+
+The operational sequence is: define the cross-classification before looking at results; construct coherent hybrid distributions; calculate variable-level Das Gupta effects; refine each replacement marginal into its categories; verify that categories sum to their parent factor and parent factors sum to $R_1-R_0$; then repeat under defensible alternative orderings, segment definitions, and sparse-cell rules.
+
+### A two-dimensional growth-marketing refinement
+
+For the factorization $p_iq_{j\mid i}r_{ij}$, a replacement of $P$ has category-$i$ marginal
+
+$$m_{P,i}=\Delta p_i\sum_j q_{j\mid i}^{*}r_{ij}^{*},$$
+
+a replacement of $Q$ has device-category-$j$ marginal
+
+$$m_{Q,j}=\sum_i p_i^{*}\Delta q_{j\mid i}r_{ij}^{*},$$
+
+and a replacement of the rate block has cell marginal
+
+$$m_{R,ij}=p_i^{*}q_{j\mid i}^{*}\Delta r_{ij}.$$
+
+The asterisk means “use the state reached at that point in the path.” Average these marginals over every factor order. This preserves two nested adding-up identities:
+
+$$\sum_i C_{P,i}=C_P,\qquad \sum_j C_{Q,j}=C_Q,
+\qquad \sum_{ij}C_{R,ij}=C_R,$$
+
+and $C_P+C_Q+C_R=R_1-R_0$. Crucially, channel categories are summed only to the channel parent and device categories only to the device parent. Adding a separate one-way channel decomposition to a separate one-way device decomposition would count the same aggregate change twice."""),
+code(r"""# Chevan–Sutherland-style refinement for channel × device.
+# q is device conditional on channel; every row therefore sums to one.
+channels = ['Paid Search', 'Organic']
+devices = ['Mobile', 'Desktop']
+p = [np.array([.55, .45]), np.array([.48, .52])]
+q = [np.array([[.70, .30], [.60, .40]]),
+     np.array([[.76, .24], [.64, .36]])]
+r = [np.array([[.045, .080], [.035, .065]]),
+     np.array([[.041, .086], [.040, .070]])]
+
+factor_order = ['channel mix', 'device|channel mix', 'cell rate']
+category_totals = {
+    'channel mix': np.zeros(len(channels)),
+    'device|channel mix': np.zeros(len(devices)),
+    'cell rate': np.zeros((len(channels), len(devices))),
+}
+
+def aggregate_rate(state):
+    return np.sum(p[state[0]][:, None] * q[state[1]] * r[state[2]])
+
+for order in permutations(range(3)):
+    state = [0, 0, 0]
+    for factor in order:
+        if factor == 0:
+            marginal = (p[1] - p[0])[:, None] * q[state[1]] * r[state[2]]
+            category_totals['channel mix'] += marginal.sum(axis=1) / 6
+        elif factor == 1:
+            marginal = p[state[0]][:, None] * (q[1] - q[0]) * r[state[2]]
+            category_totals['device|channel mix'] += marginal.sum(axis=0) / 6
+        else:
+            marginal = p[state[0]][:, None] * q[state[1]] * (r[1] - r[0])
+            category_totals['cell rate'] += marginal / 6
+        state[factor] = 1
+
+rows = []
+rows += [('channel mix', name, value)
+         for name, value in zip(channels, category_totals['channel mix'])]
+rows += [('device|channel mix', name, value)
+         for name, value in zip(devices, category_totals['device|channel mix'])]
+rows += [('cell rate', f'{channels[i]} × {devices[j]}',
+          category_totals['cell rate'][i, j])
+         for i in range(2) for j in range(2)]
+
+refined = pd.DataFrame(rows, columns=['parent factor', 'category', 'contribution'])
+parent_check = refined.groupby('parent factor')['contribution'].sum()
+identity_check = pd.Series({
+    'baseline rate': aggregate_rate([0, 0, 0]),
+    'comparison rate': aggregate_rate([1, 1, 1]),
+    'observed change': aggregate_rate([1, 1, 1]) - aggregate_rate([0, 0, 0]),
+    'allocated change': refined['contribution'].sum(),
+})
+refined, parent_check, identity_check"""),
+md(r"""### How to read the two-dimensional result
+
+Read the first output inside each parent factor. The Paid Search and Organic rows partition only the **channel-mix** effect. Mobile and Desktop partition only the **device-within-channel** effect. The four channel × device rows partition the **within-cell-rate** effect. The parent check then sums those category rows, and the identity check verifies that the three parents reproduce the observed aggregate change.
+
+A negative Paid Search mix contribution does not say Paid Search caused conversion to fall. It says its share changed in a direction that lowers the standardized aggregate rate under the averaged replacement rule. Likewise, a positive Mobile rate contribution can coexist with a negative Mobile composition contribution. This distinction is exactly why category-level reporting is useful.
+
+For production use, report contributions in percentage points, include cell counts or effective sample sizes, flag cells created or removed between periods, and bootstrap the complete decomposition if sampling uncertainty matters. If a rate is undefined because a cell has zero exposure, use the explicit entrant/exit or reference-rate conventions discussed later; never silently replace the missing rate with zero."""),
 code(r"""# Chevan–Sutherland categorical reporting in the one-variable case.
 # Segment contributions add to variable-level composition and rate effects.
 category_report = d.set_index('segment')[['mix', 'rate']].copy()
@@ -2016,3 +2159,1570 @@ for filename, cells in notebooks.items():
     nb=nbf.v4.new_notebook(cells=cells, metadata={'kernelspec':{'display_name':'Python 3 (uv)','language':'python','name':'python3'},'language_info':{'name':'python','version':'3.12'}})
     nbf.write(nb, OUT/filename)
     print(f"built {filename}")
+
+# Notebook 06 is a standalone bridge from descriptive decomposition to
+# interpretable pattern discovery. It intentionally follows Notebook 05 so the
+# causal boundary is already established before adaptive subgroup searches.
+subgroup_cells = [
+md(r"""# 06 — Subgroup Discovery and Pattern Mining: where does the change occur?
+
+**Graduate course: Decomposition Analysis in Python**
+
+## Learning objectives
+
+- Define conditional change as an estimand rather than an informal “driver.”
+- Distinguish generic decision trees, CART, CHAID, subgroup discovery, and RuleFit.
+- Discover candidate segments on training data and evaluate them honestly on holdout data.
+- Quantify support, effect size, uncertainty, multiplicity, and stability.
+- Separate descriptive change localization from heterogeneous causal effects."""),
+md(r"""## Guiding question and notation
+
+The previous notebooks answer *how an aggregate change can be allocated*. This lesson asks a different question:
+
+> **Where in the population is the observed change concentrated?**
+
+Let $T\in\{0,1\}$ identify the baseline and comparison periods, $Y$ be an outcome such as conversion, and $X$ contain only segment characteristics available in both periods. The descriptive conditional change is
+
+$$\tau(x)=E[Y\mid T=1,X=x]-E[Y\mid T=0,X=x].$$
+
+This is not automatically a treatment effect. Period is not a manipulable treatment, and customers, acquisition policies, prices, seasonality, or measurement may differ between periods.
+
+For repeated cross-sections with $p=P(T=1)$, define the transformed outcome
+
+$$Z_i=Y_i\left(\frac{T_i}{p}-\frac{1-T_i}{1-p}\right).$$
+
+When period propensity is constant within the sampled population,
+
+$$E[Z\mid X=x]=\tau(x).$$
+
+### Proof of the transformed-outcome identity
+
+Condition on $X=x$ and use $P(T=1\mid X=x)=p$:
+
+$$\begin{aligned}
+E[Z\mid X=x]
+&=E\left[\frac{TY}{p}-\frac{(1-T)Y}{1-p}\,\middle|\,X=x\right]\\
+&=\frac{P(T=1\mid x)}{p}E[Y\mid T=1,x]
+-\frac{P(T=0\mid x)}{1-p}E[Y\mid T=0,x]\\
+&=E[Y\mid T=1,x]-E[Y\mid T=0,x]\\
+&=\tau(x).
+\end{aligned}$$
+
+The identity explains the target but also reveals its weakness. For binary $Y$, $Z$ takes values (Y/p) or (-Y/(1-p)), so its variance grows when $p$ approaches zero or one. With unequal period propensity, replace $p$ by $e(X)=P(T=1\mid X)$, diagnose overlap, and preferably use an augmented/cross-fitted pseudo-outcome to reduce noise. None of these statistical improvements makes calendar period a causal treatment.
+
+Thus a regression tree or rule ensemble fitted to $Z$ searches directly for heterogeneous **descriptive changes**."""),
+code(r"""import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import statsmodels.formula.api as smf
+from itertools import combinations
+from scipy import sparse, stats
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.linear_model import LassoCV
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.tree import DecisionTreeRegressor, export_text
+
+pd.options.display.float_format = '{:,.4f}'.format
+rng = np.random.default_rng(2026)
+plt.style.use('seaborn-v0_8-whitegrid')"""),
+md(r"""## Synthetic growth-marketing case
+
+We observe two independent monthly samples. Conversion improves mainly for high-intent Paid Search visitors on mobile, deteriorates for low-intent Social traffic, and changes slightly with tenure. Because the data-generating process is known, we can judge whether each method recovers the planted patterns.
+
+In real work, discovery never reveals “truth” this cleanly. The simulation is a unit test for reasoning, not evidence that a method controls business confounding."""),
+code(r"""n = 10_000
+df = pd.DataFrame({
+    'period': rng.integers(0, 2, n),
+    'channel': rng.choice(['Paid Search', 'Organic', 'Social'], n,
+                          p=[.38, .37, .25]),
+    'device': rng.choice(['Mobile', 'Desktop'], n, p=[.68, .32]),
+    'market': rng.choice(['Lima', 'Mexico City', 'Bogota'], n,
+                         p=[.35, .38, .27]),
+    'tenure_months': rng.gamma(2.2, 5.0, n).clip(0, 36),
+    'sessions_30d': rng.poisson(3.5, n),
+})
+
+base_logit = (
+    -3.0
+    + .18 * (df.channel == 'Paid Search')
+    + .35 * (df.device == 'Desktop')
+    + .055 * df.sessions_30d
+    + .012 * df.tenure_months
+)
+true_change_logit = (
+    .10
+    + .85 * ((df.channel == 'Paid Search') &
+             (df.device == 'Mobile') & (df.sessions_30d >= 4))
+    - .55 * ((df.channel == 'Social') & (df.sessions_30d <= 2))
+    + .20 * ((df.market == 'Lima') & (df.tenure_months >= 12))
+)
+prob = 1 / (1 + np.exp(-(base_logit + df.period * true_change_logit)))
+df['converted'] = rng.binomial(1, prob)
+
+overall = df.groupby('period').converted.agg(['mean', 'size'])
+overall.loc['change', 'mean'] = overall.loc[1, 'mean'] - overall.loc[0, 'mean']
+overall"""),
+md(r"""## Honest discovery/evaluation split
+
+Using the same observations to search thousands of rules and report the best one produces winner's-curse bias. We therefore:
+
+1. split observations before searching;
+2. learn partitions or rules only on the discovery sample;
+3. freeze their definitions;
+4. estimate period-specific rates and changes on holdout data;
+5. report support and uncertainty, not only rank.
+
+For a fixed subgroup $S$, an approximate standard error for the difference between two binary rates is
+
+$$SE(\widehat\Delta_S)=\sqrt{
+\frac{\hat r_{S1}(1-\hat r_{S1})}{n_{S1}}+
+\frac{\hat r_{S0}(1-\hat r_{S0})}{n_{S0}}}.$$
+
+This interval is valid for a prespecified subgroup under ordinary sampling assumptions. Selection makes discovery-sample intervals optimistic; holdout evaluation limits that problem."""),
+code(r"""train, holdout = train_test_split(
+    df, test_size=.40, random_state=42, stratify=df['period']
+)
+p_train = train.period.mean()
+train = train.copy()
+holdout = holdout.copy()
+train['change_target'] = train.converted * (
+    train.period / p_train - (1 - train.period) / (1 - p_train)
+)
+
+def change_report(data, group_col):
+    table = data.groupby([group_col, 'period']).converted.agg(['mean', 'size']).unstack()
+    table.columns = [f'{stat}_t{period}' for stat, period in table.columns]
+    table['change'] = table['mean_t1'] - table['mean_t0']
+    table['se'] = np.sqrt(
+        table.mean_t1 * (1-table.mean_t1) / table.size_t1
+        + table.mean_t0 * (1-table.mean_t0) / table.size_t0
+    )
+    table['ci_low'] = table.change - 1.96 * table.se
+    table['ci_high'] = table.change + 1.96 * table.se
+    return table.sort_values('change', ascending=False)
+
+train.shape, holdout.shape"""),
+md(r"""## 1. Decision trees: the broad family
+
+A decision tree recursively partitions feature space. At each internal node it chooses a condition such as `sessions_30d ≤ 3.5`; terminal leaves estimate a local target. “Decision tree” is the family name, not a unique algorithm.
+
+Trees are attractive for change localization because they produce mutually exclusive, collectively exhaustive segments. Their main weakness is instability: small data changes can alter early splits and therefore the entire tree.
+
+### The mathematical object learned by a tree
+
+A tree $\mathcal T$ partitions the feature space into leaves $A_1,\ldots,A_L$ and estimates a piecewise-constant function
+
+$$\widehat\tau_{\mathcal T}(x)=
+\sum_{\ell=1}^{L}\widehat\tau_\ell\mathbf 1\{x\in A_\ell\},
+\qquad
+\widehat\tau_\ell=\frac{1}{n_\ell}\sum_{i:X_i\in A_\ell}Z_i.$$
+
+Each observation belongs to exactly one leaf. This makes tree leaves suitable for an additive reporting frontier, unlike overlapping rules. But the fitted leaf mean predicts conditional change; it is not yet the leaf's contribution to the aggregate KPI. For a rate KPI, the exact contribution is
+
+$$c(A_\ell)=w_1(A_\ell)r_1(A_\ell)-w_0(A_\ell)r_0(A_\ell).$$
+
+A small leaf may have a large local change $\widehat\tau_\ell$ but a small aggregate contribution, while a broad leaf with modest change can dominate the total.
+
+### “Decision tree” versus named algorithms
+
+| Algorithm/family | Typical split | Typical target | Characteristic |
+|---|---|---|---|
+| ID3 | multiway categorical | classification | information gain |
+| C4.5 | categorical and threshold | classification | gain ratio and pruning |
+| CART | binary | regression/classification | SSE, Gini, or deviance; cost-complexity pruning |
+| CHAID | multiway categorical | categorical/ordinal | significance tests and category merging |
+| Model-based trees | parameter-instability split | fitted local model | coefficients can vary by leaf |
+
+Saying “we used a decision tree” is therefore underspecified. Report the target, split loss, categorical encoding, stopping rule, pruning rule, missing-value policy, and evaluation design.
+
+### Greedy recursion and its consequences
+
+At node $A$, the algorithm evaluates a restricted set of candidate conditions, commits to the best immediate split, and recurses. It does not generally revisit an early choice after seeing later splits. Consequently, a weak main effect can hide a strong deep interaction; correlated variables can substitute for one another; one-hot encoding can turn a naturally multiway categorical question into sequential binary questions; and a locally optimal tree need not be the globally optimal partition.
+
+### CART is a specific decision-tree algorithm
+
+Classification and Regression Trees (CART) uses binary splits. For a regression target $Z$, a candidate split $(j,s)$ minimizes within-child squared error:
+
+$$\mathcal L(j,s)=
+\sum_{i:X_{ij}\le s}(Z_i-\bar Z_L)^2+
+\sum_{i:X_{ij}>s}(Z_i-\bar Z_R)^2.$$
+
+Equivalently, CART maximizes impurity reduction
+
+$$G(j,s)=I(A)-\frac{n_L}{n_A}I(A_L)-\frac{n_R}{n_A}I(A_R),$$
+
+where $I(A)=n_A^{-1}\sum_{i\in A}(Z_i-\bar Z_A)^2$ for regression. A large gain means the child means are more homogeneous under squared loss. It does **not** imply statistical significance, stability, causal identification, or economic materiality.
+
+### Closed-form CART gain
+
+The ANOVA identity for one binary split is
+
+$$\underbrace{\sum_{i\in A}(Z_i-\bar Z_A)^2}_{SSE_A}
+=\underbrace{SSE_L+SSE_R}_{\text{within children}}
++\underbrace{\frac{n_Ln_R}{n_A}(\bar Z_L-\bar Z_R)^2}_{\text{between children}}.$$
+
+Therefore the reduction in SSE is exactly
+
+$$\boxed{\Delta SSE=
+\frac{n_Ln_R}{n_A}(\bar Z_L-\bar Z_R)^2}.$$
+
+This formula gives the intuition behind CART. A split is attractive when child means differ, but the factor $n_Ln_R/n_A$ penalizes extremely unbalanced children. Dividing by $n_A$ gives the normalized impurity gain. It also shows why a huge local change in a tiny subgroup may lose to a smaller contrast covering more observations.
+
+**Proof sketch.** Write $Z_i-\bar Z_A=(Z_i-\bar Z_h)+(\bar Z_h-\bar Z_A)$ inside child $h\in\{L,R\}$. The cross term vanishes because residuals sum to zero within each child. Summing the two remaining between-child terms and using $n_L(\bar Z_L-\bar Z_A)+n_R(\bar Z_R-\bar Z_A)=0$ yields the boxed expression.
+
+The fully grown tree is typically regularized through depth, minimum leaf size, or cost-complexity pruning:
+
+$$R_\alpha(\mathcal T)=R(\mathcal T)+\alpha|\mathcal T|.$$
+
+Large leaves improve precision but can hide narrow patterns; small leaves increase discovery power at the cost of variance and false findings."""),
+code(r"""features = ['channel', 'device', 'market', 'tenure_months', 'sessions_30d']
+categorical = ['channel', 'device', 'market']
+numeric = ['tenure_months', 'sessions_30d']
+encoder = ColumnTransformer([
+    ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False), categorical),
+    ('num', 'passthrough', numeric),
+])
+X_train = encoder.fit_transform(train[features])
+X_holdout = encoder.transform(holdout[features])
+feature_names = encoder.get_feature_names_out()
+
+cart = DecisionTreeRegressor(
+    max_depth=3, min_samples_leaf=300, random_state=42
+).fit(X_train, train.change_target)
+print(export_text(cart, feature_names=list(feature_names), decimals=3))
+
+train['cart_leaf'] = cart.apply(X_train)
+holdout['cart_leaf'] = cart.apply(X_holdout)
+cart_holdout = change_report(holdout, 'cart_leaf')
+cart_holdout"""),
+code(r"""# Verify the CART gain identity for a candidate Paid Search split.
+left = train.loc[train.channel.ne('Paid Search'), 'change_target']
+right = train.loc[train.channel.eq('Paid Search'), 'change_target']
+parent = train.change_target
+sse_parent = ((parent-parent.mean())**2).sum()
+sse_children = ((left-left.mean())**2).sum() + ((right-right.mean())**2).sum()
+gain_direct = sse_parent-sse_children
+gain_closed_form = (
+    len(left)*len(right)/len(parent)*(left.mean()-right.mean())**2
+)
+pd.Series({
+    'left mean': left.mean(),
+    'right mean': right.mean(),
+    'direct SSE gain': gain_direct,
+    'closed-form gain': gain_closed_form,
+    'identity error': gain_direct-gain_closed_form,
+})"""),
+code(r"""# Overfitting diagnostic: compare a deep tree with the regularized tree.
+deep_cart = DecisionTreeRegressor(
+    min_samples_leaf=20, random_state=42
+).fit(X_train, train.change_target)
+pd.DataFrame({
+    'model': ['regularized CART', 'deep CART'],
+    'leaves': [cart.get_n_leaves(), deep_cart.get_n_leaves()],
+    'train MSE': [mean_squared_error(train.change_target, cart.predict(X_train)),
+                  mean_squared_error(train.change_target, deep_cart.predict(X_train))],
+    'holdout proxy MSE': [mean_squared_error(
+        holdout.converted * (holdout.period/holdout.period.mean()
+        - (1-holdout.period)/(1-holdout.period.mean())), cart.predict(X_holdout)),
+        mean_squared_error(
+        holdout.converted * (holdout.period/holdout.period.mean()
+        - (1-holdout.period)/(1-holdout.period.mean())),
+        deep_cart.predict(X_holdout))],
+})"""),
+md(r"""### Cost-complexity pruning in practice
+
+CART's weakest-link pruning first grows a large tree and produces a nested sequence of subtrees indexed by $\alpha$. Cross-validation should choose among those subtrees. The smallest validation error is not the only defensible choice: the **one-standard-error rule** selects the simplest tree whose validation loss is statistically indistinguishable from the minimum.
+
+The next diagnostic evaluates a compact grid of pruning values on the untouched holdout pseudo-outcome only for teaching. In a real honest workflow, tune $\alpha$ inside the discovery sample and reserve holdout solely for final evaluation. Otherwise the holdout quietly becomes another training set."""),
+code(r"""holdout_p = holdout.period.mean()
+holdout_target = holdout.converted * (
+    holdout.period/holdout_p - (1-holdout.period)/(1-holdout_p)
+)
+pruning_path = deep_cart.cost_complexity_pruning_path(
+    X_train, train.change_target
+)
+alpha_grid = np.unique(np.quantile(pruning_path.ccp_alphas, np.linspace(0, 1, 12)))
+pruning_rows = []
+for alpha in alpha_grid:
+    candidate_tree = DecisionTreeRegressor(
+        ccp_alpha=float(alpha), min_samples_leaf=20, random_state=42
+    ).fit(X_train, train.change_target)
+    pruning_rows.append({
+        'ccp_alpha': alpha,
+        'leaves': candidate_tree.get_n_leaves(),
+        'train MSE': mean_squared_error(
+            train.change_target, candidate_tree.predict(X_train)
+        ),
+        'holdout proxy MSE': mean_squared_error(
+            holdout_target, candidate_tree.predict(X_holdout)
+        ),
+    })
+pruning_diagnostic = pd.DataFrame(pruning_rows)
+pruning_diagnostic.sort_values('holdout proxy MSE').head(8)"""),
+md(r"""## 2. CHAID: categorical, multiway, significance-driven splitting
+
+CHAID (Chi-squared Automatic Interaction Detection) differs from CART in three important ways:
+
+- it was designed around categorical predictors and outcomes;
+- it merges statistically similar predictor categories before splitting;
+- it can create multiway rather than only binary splits.
+
+At a node, classical CHAID uses Pearson's statistic
+
+$$X^2=\sum_{a,b}\frac{(O_{ab}-E_{ab})^2}{E_{ab}}$$
+
+and adjusts category-merging/split decisions for multiple comparisons, commonly with Bonferroni corrections. Continuous predictors must first be binned, so cutpoints are substantive tuning choices.
+
+### Classical CHAID node algorithm
+
+For every predictor at the current node:
+
+1. cross-tabulate predictor categories against the categorical target;
+2. for each eligible category pair, test whether their target distributions differ;
+3. merge the least different pair when its adjusted $p$-value exceeds the merge threshold;
+4. repeat merging until no eligible pair remains;
+5. optionally split an ordinal category that was previously merged if separation becomes significant;
+6. compute the adjusted significance of the remaining multiway association;
+7. split on the predictor with the smallest adjusted $p$-value, if below the split threshold;
+8. recurse until depth, sample-size, or significance stopping rules bind.
+
+For unordered predictors with $J$ categories there are initially $\binom{J}{2}$ pairwise comparisons. Bonferroni adjustment protects against this local search by replacing $p$ with approximately $\min(1,mp)$ for $m$ comparisons. It does not automatically correct the full adaptivity of all nodes, variables, bins, and pruning choices.
+
+### Applying CHAID to *change*
+
+Classical CHAID of `converted` on customer characteristics finds groups with different **levels**, not necessarily different **period changes**. To target change, the node model must include period and test a period-by-category interaction. For categorical predictor $G$:
+
+$$\operatorname{logit}P(Y=1\mid T,G)
+=\beta_0+\beta_TT+\sum_{g>1}\beta_g\mathbf1(G=g)
++\sum_{g>1}\gamma_gT\mathbf1(G=g).$$
+
+The null $H_0:\gamma_2=\cdots=\gamma_J=0$ says the period contrast is homogeneous across categories. Rejecting it localizes heterogeneity but does not identify why it occurred.
+
+### Expected-count and binning diagnostics
+
+Pearson's approximation becomes unreliable with small expected counts. Merge sparse categories, use an exact or Monte Carlo test where appropriate, or stop splitting. For continuous features, results can change materially with initial bins; report the binning rule and test sensitivity to quantile, business, and monotonic bins.
+
+### Why Pearson's statistic has a chi-square reference
+
+Under independence of row variable (A) and column variable (B), the fitted expected count is
+
+$$E_{ab}=\frac{n_{a+}n_{+b}}{n}.$$
+
+The standardized residuals $(O_{ab}-E_{ab})/\sqrt{E_{ab}}$ are asymptotically normal, but row and column totals impose linear constraints. An (R\times C) table has (RC) cells and (R+C-1) independent marginal constraints, leaving
+
+$$RC-(R+C-1)=(R-1)(C-1)$$
+
+degrees of freedom. Hence, under regularity conditions,
+
+$$X^2=\sum_{a=1}^{R}\sum_{b=1}^{C}
+\frac{(O_{ab}-E_{ab})^2}{E_{ab}}
+\overset{a}{\sim}\chi^2_{(R-1)(C-1)}.$$
+
+The likelihood-ratio statistic used below is
+
+$$G^2=2\{\ell(\text{interaction model})-\ell(\text{additive model})\},$$
+
+and is asymptotically chi-square with degrees of freedom equal to the number of added interaction parameters. For (J) categories and binary period, this difference is typically (J-1). Pearson and likelihood-ratio tests become asymptotically equivalent, though they can differ in sparse samples.
+
+Below is a **CHAID-style first-node diagnostic**, not a full CHAID implementation. For each categorical feature it compares a logistic model containing period and category main effects with one also containing their interaction. The likelihood-ratio test asks whether descriptive period change varies across categories."""),
+code(r"""def chaid_style_screen(data, variables):
+    rows = []
+    for variable in variables:
+        reduced = smf.logit(
+            f'converted ~ period + C({variable})', data=data
+        ).fit(disp=False)
+        full = smf.logit(
+            f'converted ~ period * C({variable})', data=data
+        ).fit(disp=False)
+        lr = 2 * (full.llf - reduced.llf)
+        df_diff = int(full.df_model - reduced.df_model)
+        rows.append({
+            'candidate split': variable,
+            'LR chi2': lr,
+            'df': df_diff,
+            'raw p': stats.chi2.sf(lr, df_diff),
+        })
+    result = pd.DataFrame(rows).sort_values('raw p')
+    result['Bonferroni p'] = np.minimum(1, result['raw p'] * len(result))
+    return result
+
+chaid_screen = chaid_style_screen(train, categorical)
+chaid_screen"""),
+code(r"""# Make the winning candidate substantively interpretable.
+winning_chaid_variable = chaid_screen.iloc[0]['candidate split']
+chaid_category_changes = (
+    train.groupby([winning_chaid_variable, 'period'])
+    .converted.agg(['mean', 'size']).unstack()
+)
+chaid_category_changes.columns = [
+    f'{stat}_t{period}' for stat, period in chaid_category_changes.columns
+]
+chaid_category_changes['change'] = (
+    chaid_category_changes.mean_t1-chaid_category_changes.mean_t0
+)
+chaid_category_changes.sort_values('change', ascending=False)"""),
+md(r"""### Reading the CHAID-style output
+
+The interaction screen answers whether change differs somewhere across the categories of a variable. It does not say every category differs, nor does its $p$-value measure effect size. Read it jointly with category rates, denominators, absolute changes, and a commercially relevant threshold.
+
+The demonstration stops after the first node and does not implement CHAID's iterative category merging, multiway recursion, ordinal restrictions, or full multiplicity bookkeeping. Calling it “CHAID-style interaction screening” is deliberate. A production CHAID analysis should use a tested implementation and disclose its merge/split thresholds."""),
+md(r"""## 3. Subgroup Discovery: explicit search for interesting rules
+
+Subgroup Discovery is a pattern-mining task: search a language of human-readable descriptions $S$ for subsets whose target distribution is unusual. Unlike a tree, discovered rules may overlap and need not cover the whole population.
+
+A common quality function balances size and exceptionality. For change localization, one useful choice is
+
+$$Q(S)=\left(\frac{n_S}{n}\right)^\alpha
+\left|\widehat\Delta_S-\widehat\Delta\right|,$$
+
+where support controls reliability and $\alpha$ controls the preference for broad versus narrow rules. Other choices include weighted relative accuracy, likelihood ratios, unusualness, or lower confidence bounds.
+
+### Description language and search lattice
+
+A rule is a conjunction such as
+
+$$S(x)=\mathbf1\{\text{channel=Paid Search}\}
+\mathbf1\{\text{device=Mobile}\}
+\mathbf1\{\text{sessions}\ge4\}.$$
+
+The description language determines what can be discovered. A refinement operator adds one condition at a time, producing a lattice from general to specific rules. Exhaustive enumeration grows combinatorially, so algorithms use beam search, branch-and-bound, evolutionary search, Monte Carlo search, or exceptional-model trees.
+
+Beam search retains only the best $B$ rules at each depth. It is fast and interpretable but can discard a mediocre parent whose refinement would have been excellent. Branch-and-bound is exact only when the quality measure has a valid optimistic upper bound.
+
+### Quality measures answer different questions
+
+Let $s=P(X\in S)$, $\Delta_S$ be subgroup change, and $\Delta$ global change.
+
+| Quality | Formula | Preference |
+|---|---|---|
+| unusualness | $s^\alpha|\Delta_S-\Delta|$ | coverage balanced with exceptional change |
+| signed impact | $s(\Delta_S-\Delta)$ | broad positive deviations |
+| absolute KPI mass | $|w_1r_1-w_0r_0|$ | contribution to aggregate movement |
+| standardized score | $|\Delta_S-\Delta|/SE$ | precision, often favors moderate large samples |
+| lower confidence bound | $|\Delta_S-\Delta|-zSE$ | conservative materiality |
+
+No score is universally correct. An unusual subgroup need not contribute much to the aggregate KPI, and the largest contribution need not have the most exceptional local change. Choose the score from the decision problem, then test sensitivity.
+
+### Covariance intuition for signed unusualness
+
+Let (W=\mathbf1\{X\in S\}) and let (Z) be a pseudo-outcome whose conditional mean is the period change. Then
+
+$$\begin{aligned}
+\operatorname{Cov}(W,Z)
+&=E[WZ]-E[W]E[Z]\\
+&=sE[Z\mid W=1]-sE[Z]\\
+&=s(\Delta_S-\Delta).
+\end{aligned}$$
+
+Thus signed impact is exactly the covariance between rule membership and change target. Absolute unusualness uses its magnitude, possibly with (s^\alpha) instead of (s). This explains both its appeal and limitation: it measures association between membership and change, not a causal effect or an additive contribution to the observed KPI.
+
+### Search multiplicity
+
+Even if every subgroup has the same population change, the largest empirical quality among thousands of candidates will be positive. A permutation calibration repeats the **entire search** under a null created by shuffling period labels and records the maximum score:
+
+$$M^{(b)}=\max_{S\in\mathcal D}Q^{(b)}(S).$$
+
+The empirical tail probability compares the observed maximum with the null distribution of maxima, not with the null distribution of one prespecified rule. This controls a family-level search statistic for the exact candidate language and permutation scheme used.
+
+### Redundancy and overlap
+
+Top rules are often near-duplicates. For membership sets $S_a,S_b$, use Jaccard overlap
+
+$$J(S_a,S_b)=\frac{|S_a\cap S_b|}{|S_a\cup S_b|}.$$
+
+One can suppress a new rule when its overlap with a higher-ranked rule exceeds a threshold, or optimize a diverse top-$k$ set. Because overlapping rules reuse observations, their changes or quality scores cannot be summed into an aggregate decomposition. Convert them into disjoint atoms or use a separate reconciliation rule when conservation is required.
+
+The code below uses a compact beam search over one- and two-condition conjunctions. It is deliberately transparent: production systems should also canonicalize duplicate rules, control the search budget, correct multiplicity, and evaluate frozen rules on fresh data."""),
+code(r"""conditions = {
+    'channel=Paid Search': train.channel.eq('Paid Search'),
+    'channel=Organic': train.channel.eq('Organic'),
+    'channel=Social': train.channel.eq('Social'),
+    'device=Mobile': train.device.eq('Mobile'),
+    'device=Desktop': train.device.eq('Desktop'),
+    'market=Lima': train.market.eq('Lima'),
+    'sessions>=4': train.sessions_30d.ge(4),
+    'sessions<=2': train.sessions_30d.le(2),
+    'tenure>=12': train.tenure_months.ge(12),
+}
+
+def period_change(data, mask):
+    selected = data.loc[mask]
+    rates = selected.groupby('period').converted.mean()
+    if len(rates) < 2:
+        return np.nan
+    return rates.loc[1] - rates.loc[0]
+
+global_change = period_change(train, pd.Series(True, index=train.index))
+candidates = []
+items = list(conditions.items())
+for depth in [1, 2]:
+    for combo in combinations(items, depth):
+        names, masks = zip(*combo)
+        mask = np.logical_and.reduce(masks)
+        support = mask.mean()
+        if mask.sum() < 250 or train.loc[mask, 'period'].nunique() < 2:
+            continue
+        delta = period_change(train, mask)
+        quality = np.sqrt(support) * abs(delta - global_change)
+        candidates.append({
+            'rule': ' AND '.join(names), 'support_train': support,
+            'change_train': delta, 'quality_train': quality,
+        })
+
+discovered = pd.DataFrame(candidates).sort_values(
+    'quality_train', ascending=False
+).drop_duplicates('rule').head(8)
+discovered"""),
+code(r"""# Calibrate the maximum search score under a shuffled-period null.
+search_masks = []
+for depth in [1, 2]:
+    for combo in combinations(items, depth):
+        mask = np.logical_and.reduce([item[1].to_numpy() for item in combo])
+        if mask.sum() >= 250:
+            search_masks.append(mask)
+
+def maximum_quality_for_period(period_vector):
+    y_values = train.converted.to_numpy()
+    global_delta = y_values[period_vector == 1].mean() - y_values[period_vector == 0].mean()
+    scores = []
+    for mask in search_masks:
+        subgroup_period = period_vector[mask]
+        subgroup_y = y_values[mask]
+        if np.unique(subgroup_period).size < 2:
+            continue
+        delta = (
+            subgroup_y[subgroup_period == 1].mean()
+            - subgroup_y[subgroup_period == 0].mean()
+        )
+        scores.append(np.sqrt(mask.mean())*abs(delta-global_delta))
+    return max(scores)
+
+permutation_rng = np.random.default_rng(123)
+observed_max_quality = discovered.quality_train.max()
+null_maxima = np.array([
+    maximum_quality_for_period(
+        permutation_rng.permutation(train.period.to_numpy())
+    )
+    for _ in range(200)
+])
+permutation_diagnostic = pd.Series({
+    'observed maximum quality': observed_max_quality,
+    'null 95% maximum': np.quantile(null_maxima, .95),
+    'family-wise permutation p': (
+        1+np.sum(null_maxima >= observed_max_quality)
+    )/(len(null_maxima)+1),
+})
+permutation_diagnostic"""),
+code(r"""# Freeze the top rules and estimate them on holdout observations.
+def evaluate_rule_text(data, rule):
+    mask = pd.Series(True, index=data.index)
+    mapping = {
+        'channel=Paid Search': data.channel.eq('Paid Search'),
+        'channel=Organic': data.channel.eq('Organic'),
+        'channel=Social': data.channel.eq('Social'),
+        'device=Mobile': data.device.eq('Mobile'),
+        'device=Desktop': data.device.eq('Desktop'),
+        'market=Lima': data.market.eq('Lima'),
+        'sessions>=4': data.sessions_30d.ge(4),
+        'sessions<=2': data.sessions_30d.le(2),
+        'tenure>=12': data.tenure_months.ge(12),
+    }
+    for part in rule.split(' AND '):
+        mask &= mapping[part]
+    selected = data.loc[mask]
+    rates = selected.groupby('period').converted.agg(['mean', 'size'])
+    delta = rates.loc[1, 'mean'] - rates.loc[0, 'mean']
+    se = np.sqrt(sum(rates['mean'] * (1-rates['mean']) / rates['size']))
+    return pd.Series({'support_holdout': mask.mean(), 'change_holdout': delta,
+                      'ci_low': delta-1.96*se, 'ci_high': delta+1.96*se})
+
+honest_rules = discovered.join(
+    discovered.rule.apply(lambda rule: evaluate_rule_text(holdout, rule))
+)
+honest_rules"""),
+code(r"""# Quantify discovery optimism and redundancy among the selected rules.
+honest_rules = honest_rules.assign(
+    absolute_shrinkage=lambda x: x.change_train.abs()-x.change_holdout.abs()
+)
+
+def mask_for_rule(data, rule):
+    mapping = {
+        'channel=Paid Search': data.channel.eq('Paid Search'),
+        'channel=Organic': data.channel.eq('Organic'),
+        'channel=Social': data.channel.eq('Social'),
+        'device=Mobile': data.device.eq('Mobile'),
+        'device=Desktop': data.device.eq('Desktop'),
+        'market=Lima': data.market.eq('Lima'),
+        'sessions>=4': data.sessions_30d.ge(4),
+        'sessions<=2': data.sessions_30d.le(2),
+        'tenure>=12': data.tenure_months.ge(12),
+    }
+    mask = pd.Series(True, index=data.index)
+    for part in rule.split(' AND '):
+        mask &= mapping[part]
+    return mask
+
+rule_masks = {
+    rule: mask_for_rule(holdout, rule).to_numpy()
+    for rule in honest_rules.rule.head(6)
+}
+jaccard = pd.DataFrame(index=rule_masks, columns=rule_masks, dtype=float)
+for left_name, left_mask in rule_masks.items():
+    for right_name, right_mask in rule_masks.items():
+        union = np.logical_or(left_mask, right_mask).sum()
+        jaccard.loc[left_name, right_name] = (
+            np.logical_and(left_mask, right_mask).sum()/union if union else np.nan
+        )
+honest_rules[['rule', 'change_train', 'change_holdout', 'absolute_shrinkage']], jaccard"""),
+md(r"""### Reading the Subgroup Discovery diagnostics
+
+`absolute_shrinkage > 0` indicates that the discovered magnitude became smaller on holdout—a direct view of winner's curse. Negative values can occur by chance and are not proof of anti-overfitting. The Jaccard matrix reveals when several impressive rows describe almost the same people.
+
+For confirmatory use, freeze the rule list before holdout, report all frozen rules rather than only survivors, and use simultaneous or multiplicity-adjusted inference when making a family of claims. For exploratory use, label the table as hypothesis generation."""),
+md(r"""## 4. RuleFit: a sparse model built from tree rules
+
+RuleFit first grows a tree ensemble to generate nonlinear rules, then combines rule indicators with linear terms in a sparse regression:
+
+$$\hat f(x)=\beta_0+\sum_{j=1}^{p}\beta_j l_j(x)
++\sum_{k=1}^{K}\alpha_k r_k(x),$$
+
+where $l_j(x)$ are winsorized/scaled linear features and $r_k(x)\in\{0,1\}$ are rules extracted from tree nodes or leaves. An $L_1$ penalty selects a small subset:
+
+$$\min_{\beta,\alpha}\frac1n\sum_i
+(Z_i-\hat f(X_i))^2+\lambda(\|\beta\|_1+\|\alpha\|_1).$$
+
+Compared with one CART tree, RuleFit is usually more stable and flexible; compared with an unrestricted boosting model, it produces an inspectable sparse rule list. Correlated rules can substitute for each other, so coefficient rank is not a causal or uniquely identified importance ordering.
+
+### Original RuleFit construction
+
+Friedman and Popescu's procedure has three conceptual stages:
+
+1. fit a stochastic tree ensemble, often varying tree sizes so both low- and higher-order interactions appear;
+2. extract a rule from every non-root tree node, not only terminal leaves;
+3. combine rule indicators with winsorized linear terms and fit a sparse linear model.
+
+For continuous feature $x_j$, the linear term is winsorized at declared quantiles and scaled so its typical variation is comparable with a rule. A common representation is
+
+$$l_j(x_j)=0.4\frac{x_j^*-\bar x_j^*}{sd(x_j^*)},$$
+
+where $x_j^*$ is winsorized. The factor (0.4) approximates the average standard deviation of a binary rule under typical support, reducing arbitrary penalty differences between linear and rule terms.
+
+### Global and local rule importance
+
+For rule $r_k$ with coefficient $\alpha_k$ and empirical support $s_k$, global importance is
+
+$$I_k=|\alpha_k|\sqrt{s_k(1-s_k)}.$$
+
+This corrects raw coefficient magnitude for how much the binary rule varies. A local contribution at observation $x$ is
+
+$$I_k(x)=\alpha_k\{r_k(x)-s_k\}.$$
+
+Because (r_k\) is Bernoulli with variance (s_k(1-s_k)),
+
+$$\operatorname{Var}[I_k(X)]
+=\alpha_k^2s_k(1-s_k),$$
+
+so (I_k=|\alpha_k|\sqrt{s_k(1-s_k)}) is exactly the standard deviation of the rule's centered contribution across the sample. This is why a huge coefficient attached to an almost-always-true rule can have modest global importance.
+
+### Why the Lasso produces zeros
+
+Under the convention
+
+$$\min_\theta \frac{1}{2n}\|Z-H\theta\|_2^2+\lambda\|\theta\|_1,$$
+
+the Karush–Kuhn–Tucker condition for a coefficient to remain zero is
+
+$$\left|\frac1nH_k^\top(Z-H\widehat\theta)\right|\le\lambda.$$
+
+In words, a rule enters only when its correlation with the current residual exceeds the penalty. When two rules are highly correlated, fitting one can reduce the other's residual correlation below the threshold. This gives a statistical explanation for coefficient instability among near-duplicate rules.
+
+These are predictive-model diagnostics. They do not conserve an observed period change, and correlated rules can redistribute coefficients when the sample or penalty changes.
+
+### Tuning and validation
+
+Tune ensemble size/depth, subsampling, winsorization, and the Lasso penalty within discovery folds. Evaluate the final rule model on untouched data. In change discovery, use time-aware folds when seasonality or drift matters; random folds can make unstable rules appear reproducible.
+
+The implementation below is pedagogical and RuleFit-inspired: gradient-boosted leaf rules plus scaled encoded linear terms followed by `LassoCV`. A production implementation should use repeated validation, explicit winsorization, rule deduplication, stability selection, and a supported RuleFit library."""),
+code(r"""gb = GradientBoostingRegressor(
+    n_estimators=40, max_depth=2, min_samples_leaf=120,
+    learning_rate=.05, random_state=42
+).fit(X_train, train.change_target)
+
+train_leaves = gb.apply(X_train).astype(int).reshape(len(train), -1)
+holdout_leaves = gb.apply(X_holdout).astype(int).reshape(len(holdout), -1)
+leaf_encoder = OneHotEncoder(handle_unknown='ignore')
+R_train = leaf_encoder.fit_transform(train_leaves)
+R_holdout = leaf_encoder.transform(holdout_leaves)
+
+scaler = StandardScaler()
+L_train = scaler.fit_transform(X_train)
+L_holdout = scaler.transform(X_holdout)
+design_train = sparse.hstack([sparse.csr_matrix(L_train), R_train], format='csr')
+design_holdout = sparse.hstack([sparse.csr_matrix(L_holdout), R_holdout], format='csr')
+
+rulefit = LassoCV(cv=5, random_state=42, max_iter=20_000).fit(
+    design_train, train.change_target
+)
+rule_coefs = rulefit.coef_[L_train.shape[1]:]
+
+def describe_leaf(tree, target_leaf, names):
+    # Recover the conjunction leading to one terminal leaf.
+    def walk(node, path):
+        if node == target_leaf:
+            return path
+        if tree.children_left[node] == tree.children_right[node]:
+            return None
+        feature = names[tree.feature[node]]
+        threshold = tree.threshold[node]
+        left = walk(tree.children_left[node], path + [f'{feature} <= {threshold:.3g}'])
+        if left is not None:
+            return left
+        return walk(tree.children_right[node], path + [f'{feature} > {threshold:.3g}'])
+    return ' AND '.join(walk(0, []) or [])
+
+rule_descriptions = []
+for estimator_number, leaf_ids in enumerate(leaf_encoder.categories_):
+    tree = gb.estimators_[estimator_number, 0].tree_
+    rule_descriptions.extend(
+        describe_leaf(tree, leaf_id, feature_names) for leaf_id in leaf_ids
+    )
+
+rule_support = np.asarray(R_train.mean(axis=0)).ravel()
+top_rules = pd.DataFrame({
+    'rule': rule_descriptions,
+    'coefficient': rule_coefs,
+    'support': rule_support,
+})
+top_rules = top_rules.loc[top_rules.coefficient.ne(0)].assign(
+    rule_importance=lambda x: (
+        x.coefficient.abs()*np.sqrt(x.support*(1-x.support))
+    )
+).sort_values('rule_importance', ascending=False).head(12)
+
+pd.Series({
+    'selected linear terms': np.count_nonzero(rulefit.coef_[:L_train.shape[1]]),
+    'selected leaf rules': np.count_nonzero(rule_coefs),
+    'train MSE': mean_squared_error(train.change_target,
+                                    rulefit.predict(design_train)),
+    'holdout proxy MSE': mean_squared_error(
+        holdout.converted * (holdout.period/holdout.period.mean()
+        - (1-holdout.period)/(1-holdout.period.mean())),
+        rulefit.predict(design_holdout)),
+}), top_rules"""),
+code(r"""# Verify that support-adjusted importance is the rule contribution's SD.
+top_index = int(top_rules.index[0])
+top_rule_values = R_train[:, top_index].toarray().ravel()
+top_coefficient = rule_coefs[top_index]
+top_support = top_rule_values.mean()
+centered_rule_contribution = top_coefficient*(top_rule_values-top_support)
+pd.Series({
+    'formula importance': abs(top_coefficient)*np.sqrt(
+        top_support*(1-top_support)
+    ),
+    'empirical contribution SD': centered_rule_contribution.std(ddof=0),
+    'identity error': (
+        abs(top_coefficient)*np.sqrt(top_support*(1-top_support))
+        - centered_rule_contribution.std(ddof=0)
+    ),
+})"""),
+md(r"""### Reading the RuleFit output
+
+The table ranks selected leaf rules by support-adjusted importance, not merely by coefficient size. A positive coefficient means the rule raises the fitted change target conditional on all other selected terms; it is not the rule's standalone period change. Inspect the raw baseline/comparison rates for any rule before giving it business meaning.
+
+This demonstration differs from canonical RuleFit in four ways: it extracts terminal leaves only, uses a fixed shallow boosting depth, scales encoded linear columns without explicit winsorization, and does not deduplicate logically equivalent rules. Those simplifications keep the mechanism visible but should be removed or documented in production research.
+
+### Why RuleFit and Subgroup Discovery can disagree
+
+Subgroup Discovery scores each rule largely on its own. RuleFit estimates coefficients jointly, so one rule can absorb variation that another overlapping rule would explain marginally. CART, meanwhile, forces a single exhaustive partition. Disagreement is therefore expected and useful: it exposes dependence on the search space and estimand rather than revealing which algorithm found the one “true” segment."""),
+md(r"""## Method comparison
+
+| Method | Search structure | Split/selection criterion | Output | Main risk |
+|---|---|---|---|---|
+| Decision tree | recursive partition | algorithm-dependent | exhaustive leaves | instability |
+| CART | binary recursive partition | impurity/SSE reduction plus pruning | one tree | greedy cutpoints and overfit |
+| CHAID | categorical multiway partition | adjusted chi-square tests and category merging | one significance-driven tree | binning, low expected counts, repeated testing |
+| Subgroup Discovery | overlapping rule search | support × unusualness quality | ranked local patterns | huge search space and redundancy |
+| RuleFit | ensemble-generated rules + linear terms | predictive loss with sparsity penalty | sparse additive rule model | correlated rules and coefficient instability |
+
+The methods are complementary. CART asks for one partition of everyone. CHAID emphasizes categorical interactions and inferential screening. Subgroup Discovery seeks exceptional, possibly overlapping niches. RuleFit trades the simplicity of one tree for a more stable sparse ensemble.
+
+## Econometric point of view
+
+### Description versus causal heterogeneity
+
+The conditional period contrast
+
+$$E[Y\mid T=1,X=x]-E[Y\mid T=0,X=x]$$
+
+answers where outcomes changed among observed populations. A conditional average treatment effect instead requires potential outcomes:
+
+$$\tau_{\mathrm{causal}}(x)=E[Y(1)-Y(0)\mid X=x].$$
+
+Equating them requires a well-defined intervention plus identification assumptions such as random assignment or conditional exchangeability, positivity, consistency, and no interference. If `period` is merely calendar time, those assumptions usually fail.
+
+For experiments, causal trees and causal forests modify splitting and estimation to target treatment-effect heterogeneity. Ordinary CART on outcomes, a period interaction screen, or RuleFit on observational change does not become causal because it discovers an intuitive segment.
+
+### Robust workflow
+
+1. Declare outcome, periods, population, features, and minimum commercially relevant change.
+2. Exclude post-period or post-treatment features that create leakage.
+3. Reserve a final untouched evaluation sample or future time window.
+4. Search with minimum support in **both** periods.
+5. Report baseline rate, comparison rate, difference, interval, and counts.
+6. Correct or disclose multiplicity; use false-discovery control when testing many fixed candidates.
+7. Test stability across seeds, time windows, cutpoints, and nearby rule definitions.
+8. Translate replicated descriptive patterns into hypotheses for experiments or quasi-experiments.
+
+## Limitations
+
+- Adaptive rules exaggerate effects unless evaluated honestly.
+- Rare subgroups can show extreme but noisy changes.
+- Missing categories and changing measurement definitions can masquerade as patterns.
+- Trees are discontinuous: observations around a cutpoint may receive very different labels.
+- CHAID p-values depend on bins, expected cell counts, merging rules, and the search procedure.
+- RuleFit coefficients are conditional on a large correlated dictionary and are not unique causal contributions.
+- Overlapping Subgroup Discovery rules cannot be summed into an aggregate decomposition.
+- A subgroup can be predictively useful but operationally unactionable or ethically inappropriate.
+
+## Exercises
+
+1. Change the CART minimum leaf size from 50 to 800. Plot discovered change against holdout change.
+2. Reverse the discovery and holdout time windows. Which rules remain stable?
+3. Extend the beam search to depth three and quantify the winner's curse.
+4. Replace the quality score with a lower confidence bound. How does ranking change?
+5. Bin tenure three different ways before the CHAID-style screen.
+6. Simulate a campaign randomized within period and compare descriptive period heterogeneity with causal treatment heterogeneity.
+7. Add channel-mix drift without any within-cell change. Determine which methods confuse composition with conditional performance.
+
+## Takeaways
+
+1. Pattern mining localizes change; it does not allocate the aggregate change like Kitagawa or Shapley.
+2. CART, CHAID, Subgroup Discovery, and RuleFit encode different search spaces and notions of an interesting subgroup.
+3. Support, holdout replication, uncertainty, multiplicity, and stability belong in every report.
+4. “The change is concentrated here” is descriptive. “This segment responds to intervention” requires a causal design.
+
+## References
+
+- Morgan, J. N., & Sonquist, J. A. (1963). Problems in the analysis of survey data, and a proposal. *Journal of the American Statistical Association*, 58, 415–434.
+- Kass, G. V. (1980). An exploratory technique for investigating large quantities of categorical data. *Applied Statistics*, 29, 119–127. https://doi.org/10.2307/2986296
+- Breiman, L., Friedman, J. H., Olshen, R. A., & Stone, C. J. (1984). *Classification and Regression Trees*. Wadsworth.
+- Klösgen, W. (1996). Explora: A multipattern and multistrategy discovery assistant. In *Advances in Knowledge Discovery and Data Mining*.
+- Wrobel, S. (1997). An algorithm for multi-relational discovery of subgroups. In *PKDD 1997*.
+- Friedman, J. H., & Popescu, B. E. (2008). Predictive learning via rule ensembles. *Annals of Applied Statistics*, 2, 916–954. https://doi.org/10.1214/07-AOAS148
+- Herrera, F., Carmona, C. J., González, P., & del Jesus, M. J. (2011). An overview on subgroup discovery. *Knowledge and Information Systems*, 29, 495–525. https://doi.org/10.1007/s10115-010-0356-2
+- Athey, S., & Imbens, G. (2016). Recursive partitioning for heterogeneous causal effects. *PNAS*, 113, 7353–7360. https://doi.org/10.1073/pnas.1510489113
+- Wager, S., & Athey, S. (2018). Estimation and inference of heterogeneous treatment effects using random forests. *JASA*, 113, 1228–1242. https://doi.org/10.1080/01621459.2017.1319839"""),
+]
+
+subgroup_nb = nbf.v4.new_notebook(
+    cells=subgroup_cells,
+    metadata={
+        'kernelspec': {
+            'display_name': 'Python 3 (uv)', 'language': 'python', 'name': 'python3'
+        },
+        'language_info': {'name': 'python', 'version': '3.12'},
+    },
+)
+nbf.write(subgroup_nb, OUT / '06_subgroup_discovery_pattern_mining.ipynb')
+print('built 06_subgroup_discovery_pattern_mining.ipynb')
+
+# Notebook 07 operationalizes the full workflow developed across the course.
+growth_cells = [
+md(r"""# 07 — Complete Growth workflow: from KPI change to an experiment decision
+
+**Graduate course: Decomposition Analysis in Python**
+
+## Learning objectives
+
+- Translate a KPI alert into an auditable analytical contract.
+- Separate known-segment decomposition from adaptive subgroup discovery.
+- Build an honest HCD-style tree whose leaf contributions conserve the KPI change.
+- Convert a replicated descriptive pattern into a testable mechanism.
+- Estimate experimental lift and connect it to an economic launch decision.
+- Produce a final Growth readout without confusing contribution, prediction, and causation."""),
+md(r"""## The workflow
+
+```text
+Metric contract → data QA → aggregate change
+      ↓
+Known segmentation → exact Kitagawa mix/rate decomposition
+      ↓
+Discovery sample → regularized CART/HCD candidate hierarchy
+      ↓
+Holdout sample → exact leaf ledger + uncertainty + stability
+      ↓
+Mechanism hypothesis → randomized experiment
+      ↓
+Causal lift → incremental conversions → economic decision
+```
+
+The stages answer different questions:
+
+| Stage | Question | Permitted claim |
+|---|---|---|
+| Monitoring | Did the KPI move? | observed change |
+| Kitagawa | How is the change allocated across known cells? | descriptive contribution |
+| HCD discovery | Where is the change concentrated? | replicated descriptive localization |
+| Experiment | Does the intervention change the KPI? | causal effect under the design |
+| Economics | Is rollout valuable at relevant scale? | decision conditional on costs and transport |
+
+No arrow automatically upgrades the previous result into a causal statement."""),
+code(r"""import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import sys
+from pathlib import Path
+from itertools import permutations
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.tree import DecisionTreeRegressor, export_text
+
+PROJECT_ROOT = Path.cwd().parent if Path.cwd().name == 'notebooks' else Path.cwd()
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+from scripts.rate_decomposition import kitagawa_two_period
+
+pd.options.display.float_format = '{:,.4f}'.format
+rng = np.random.default_rng(2027)
+plt.style.use('seaborn-v0_8-whitegrid')"""),
+md(r"""## 1. Write the metric and decision contract first
+
+**Scenario.** Monthly website conversion rate fell. The team wants to know where the movement occurred and whether a new mobile landing experience should be tested.
+
+The contract is:
+
+- **population:** eligible web sessions, excluding bots and internal traffic;
+- **unit:** session;
+- **numerator:** sessions with a purchase inside the attribution window;
+- **denominator:** eligible sessions;
+- **contrast:** comparison month minus baseline month;
+- **known reporting dimensions:** channel and device;
+- **discovery dimensions:** channel, device, market, intent, and tenure;
+- **decision:** launch a landing-page intervention only if replicated incremental value exceeds cost;
+- **causal status:** the monthly contrast is descriptive; only the later randomized treatment identifies lift.
+
+Changing any of these definitions changes the estimand."""),
+md(r"""## 2. Simulate two monthly populations
+
+The simulation contains both composition drift and within-segment performance changes. Paid Search receives more traffic, while high-intent Paid Search mobile sessions deteriorate. Social desktop improves slightly. This structure lets us test whether the workflow distinguishes aggregate allocation from local pattern discovery."""),
+code(r"""def simulate_month(period, n):
+    channel_p = ([.32, .43, .25] if period == 0 else [.40, .36, .24])
+    data = pd.DataFrame({
+        'period': period,
+        'channel': rng.choice(['Paid Search', 'Organic', 'Social'], n,
+                              p=channel_p),
+        'device': rng.choice(['Mobile', 'Desktop'], n, p=[.70, .30]),
+        'market': rng.choice(['Lima', 'Mexico City', 'Bogota'], n,
+                             p=[.35, .38, .27]),
+        'high_intent': rng.binomial(1, .38, n),
+        'tenure_months': rng.gamma(2.1, 5.5, n).clip(0, 36),
+    })
+    logit = (
+        -2.75
+        + .28 * data.high_intent
+        + .30 * data.device.eq('Desktop')
+        + .16 * data.channel.eq('Paid Search')
+        + .012 * data.tenure_months
+    )
+    period_shift = (
+        -.05
+        - .72 * (data.channel.eq('Paid Search')
+                 & data.device.eq('Mobile') & data.high_intent.eq(1))
+        + .32 * (data.channel.eq('Social') & data.device.eq('Desktop'))
+        + .16 * (data.market.eq('Lima') & data.tenure_months.ge(12))
+    )
+    probability = 1 / (1 + np.exp(-(logit + period * period_shift)))
+    data['converted'] = rng.binomial(1, probability)
+    return data
+
+events = pd.concat([
+    simulate_month(0, 14_000),
+    simulate_month(1, 14_000),
+], ignore_index=True)
+
+metric = events.groupby('period').converted.agg(['sum', 'count', 'mean'])
+metric.loc['change', 'mean'] = metric.loc[1, 'mean'] - metric.loc[0, 'mean']
+metric"""),
+md(r"""## 3. Data-quality gate
+
+Before explaining a movement, verify that it is not a broken metric. At minimum check uniqueness of the analysis unit, missing dimensions, invalid outcome values, denominator volume, period coverage, and category drift. A production workflow should also compare event-schema versions, bot filters, consent logic, attribution windows, and late-arriving events."""),
+code(r"""qa = pd.Series({
+    'rows': len(events),
+    'duplicate index': events.index.duplicated().sum(),
+    'missing key dimensions': events[
+        ['period', 'channel', 'device', 'market', 'converted']
+    ].isna().any(axis=1).sum(),
+    'invalid outcomes': (~events.converted.isin([0, 1])).sum(),
+    'baseline denominator': events.period.eq(0).sum(),
+    'comparison denominator': events.period.eq(1).sum(),
+})
+channel_volume = pd.crosstab(events.channel, events.period, normalize='columns')
+qa, channel_volume"""),
+md(r"""## 4. Known-segment decomposition with Kitagawa
+
+First use the business hierarchy already understood by stakeholders. For joint cell $g=\text{channel}\times\text{device}$,
+
+$$R_t=\sum_g w_{gt}r_{gt}.$$
+
+Kitagawa allocates the observed change exactly:
+
+$$\Delta R=\sum_g
+(w_{g1}-w_{g0})\frac{r_{g1}+r_{g0}}{2}
++\sum_g(r_{g1}-r_{g0})\frac{w_{g1}+w_{g0}}{2}.$$
+
+This stage answers whether the aggregate movement is mainly associated with **joint channel × device composition** or performance inside those joint cells. It does not separately attribute composition to channel and device, because the joint share vector $w_{gt}$ is treated as one changing block."""),
+code(r"""cell = (
+    events.groupby(['period', 'channel', 'device'])
+    .converted.agg(['mean', 'size']).reset_index()
+)
+cell['weight'] = cell['size'] / cell.groupby('period')['size'].transform('sum')
+wide = cell.pivot(index=['channel', 'device'], columns='period',
+                  values=['weight', 'mean']).reset_index()
+wide.columns = ['channel', 'device', 'w0', 'w1', 'r0', 'r1']
+wide['segment'] = wide.channel + ' × ' + wide.device
+
+kitagawa = kitagawa_two_period(
+    wide[['segment', 'w0', 'w1', 'r0', 'r1']]
+)
+known_ledger = kitagawa.detail.set_index('segment')[
+    ['w0', 'w1', 'r0', 'r1', 'mix', 'rate', 'total_contribution']
+].sort_values('total_contribution')
+kitagawa.summary, known_ledger"""),
+code(r"""known_ledger[['mix', 'rate']].plot.barh(figsize=(9, 4.8))
+plt.axvline(0, color='black', linewidth=.8)
+plt.xlabel('Contribution to aggregate CVR change')
+plt.title('Known channel × device decomposition')
+plt.tight_layout()
+plt.show()"""),
+md(r"""## 4.1 Should Growth use Kitagawa, Das Gupta, or Shapley?
+
+The answer depends on the question—not on which method sounds more advanced.
+
+### Kitagawa is preferable when
+
+- the KPI is a weighted rate;
+- segments form one declared partition;
+- the desired distinction is **joint composition versus within-cell rate**;
+- stakeholders can act on the joint cells;
+- a transparent two-component ledger is more valuable than finer attribution.
+
+For `channel × device`, Kitagawa treats the six joint shares as one composition vector. It is exact and robust, but cannot say how much of composition is specifically “channel” versus “device.”
+
+### Das Gupta is preferable when
+
+- there are several scientifically distinct changing blocks;
+- the analyst can define coherent standardized populations;
+- the question requires a separate allocation to channel, device-within-channel, and cell rate;
+- interaction allocation and factorization sensitivity are reported.
+
+Use the sequential factorization
+
+$$R_t=\sum_i p_{it}\sum_j q_{j\mid i,t}r_{ijt},$$
+
+where $p_{it}=P_t(\text{channel}=i)$ and $q_{j\mid i,t}=P_t(\text{device}=j\mid\text{channel}=i)$. Define
+
+$$H(a,b,c)=\sum_i p_{i,a}\sum_j q_{j\mid i,b}r_{ij,c}.$$
+
+Replacing the three blocks along all $3!=6$ orders and averaging produces exact symmetric contributions.
+
+### Where Shapley enters
+
+For the same hybrid value function $H$, all-orders Das Gupta replacement and a Shapley allocation are mathematically the same averaging principle. “Use Shapley” is incomplete until the coalition value—here, the rule for constructing each hybrid distribution—is defined. Shapley resolves order dependence conditional on that game; it does not resolve ambiguity about factorization, causal interpretation, or impossible hybrid populations.
+
+### Recommendation for this workflow
+
+Report both levels:
+
+1. **primary operational ledger:** Kitagawa on joint channel × device cells;
+2. **secondary diagnostic:** Das Gupta/Shapley over channel composition, device conditional composition, and cell rates;
+3. **sensitivity analysis:** reverse the factorization and disclose how component labels move;
+4. never sum the Kitagawa and Das Gupta tables—they are alternative views of the same total change."""),
+code(r"""# Multidimensional Das Gupta/Shapley allocation for a sequential factorization.
+def sequential_components(data, first_col, second_col):
+    first_levels = sorted(data[first_col].unique())
+    second_levels = sorted(data[second_col].unique())
+    first_share, conditional_share, cell_rate = [], [], []
+    for period in [0, 1]:
+        period_data = data.loc[data.period.eq(period)]
+        counts = pd.crosstab(period_data[first_col], period_data[second_col]).reindex(
+            index=first_levels, columns=second_levels, fill_value=0
+        )
+        outcomes = period_data.pivot_table(
+            index=first_col, columns=second_col, values='converted', aggfunc='mean'
+        ).reindex(index=first_levels, columns=second_levels)
+        if outcomes.isna().any().any():
+            raise ValueError('Every cross-classified cell needs support in both periods')
+        first_share.append(counts.sum(axis=1).to_numpy()/counts.to_numpy().sum())
+        conditional_share.append(counts.div(counts.sum(axis=1), axis=0).to_numpy())
+        cell_rate.append(outcomes.to_numpy())
+    return first_levels, second_levels, first_share, conditional_share, cell_rate
+
+def all_orders_standardization(first_share, conditional_share, cell_rate, labels):
+    def H(state):
+        return float(np.sum(
+            first_share[state[0]][:, None]
+            * conditional_share[state[1]]
+            * cell_rate[state[2]]
+        ))
+    allocation = np.zeros(3)
+    path_rows = []
+    for order in permutations(range(3)):
+        state = [0, 0, 0]
+        row = {'order': ' → '.join(labels[index] for index in order)}
+        for factor in order:
+            before = H(state)
+            state[factor] = 1
+            marginal = H(state)-before
+            allocation[factor] += marginal/6
+            row[labels[factor]] = marginal
+        path_rows.append(row)
+    summary = pd.Series(allocation, index=labels)
+    summary['allocated'] = allocation.sum()
+    summary['observed'] = H([1, 1, 1])-H([0, 0, 0])
+    summary['error'] = summary.allocated-summary.observed
+    return summary, pd.DataFrame(path_rows)
+
+_, _, p_cd, q_cd, r_cd = sequential_components(events, 'channel', 'device')
+channel_first, channel_paths = all_orders_standardization(
+    p_cd, q_cd, r_cd,
+    ['channel composition', 'device | channel composition', 'cell rate'],
+)
+
+_, _, p_dc, q_dc, r_dc = sequential_components(events, 'device', 'channel')
+device_first, device_paths = all_orders_standardization(
+    p_dc, q_dc, r_dc,
+    ['device composition', 'channel | device composition', 'cell rate'],
+)
+
+multidimensional_comparison = pd.concat(
+    [channel_first.rename('channel first'), device_first.rename('device first')],
+    axis=1,
+)
+multidimensional_comparison, channel_paths"""),
+md(r"""### Reading the multidimensional comparison
+
+Both columns reproduce the same observed CVR change and should have near-zero error. Their intermediate composition labels differ because they answer different standardization questions:
+
+- `channel first` preserves channel marginals and changes device conditional on channel;
+- `device first` preserves device marginals and changes channel conditional on device.
+
+If the channel contribution changes materially across these representations, the data do not support a factorization-invariant statement such as “channel explains exactly X.” The defensible statement is conditional: “under the channel-first standardization, X is allocated to channel composition.”
+
+For routine Growth reporting, joint-cell Kitagawa is usually the safest primary table. Use multidimensional Das Gupta/Shapley when the separate factor labels matter enough to justify the additional modeling choices."""),
+md(r"""## 5. HCD discovery: search without sacrificing conservation
+
+The known table may hide an interaction involving intent, market, or tenure. We now split the data **before** searching. If period membership depends on observed composition, the constant-$p$ transformed outcome is inappropriate. Let
+
+$$
+e(x)=P(T=1\mid X=x),
+\qquad
+m_t(x)=E[Y\mid T=t,X=x].
+$$
+
+Use the cross-fitted augmented inverse-probability pseudo-outcome
+
+$$
+\phi_i=\widehat m_1(X_i)-\widehat m_0(X_i)
++\frac{T_i\{Y_i-\widehat m_1(X_i)\}}{\widehat e(X_i)}
+-\frac{(1-T_i)\{Y_i-\widehat m_0(X_i)\}}{1-\widehat e(X_i)}.
+$$
+
+Under correct nuisance estimation and overlap, $E[\phi\mid X=x]$ targets the conditional descriptive period contrast. Cross-fitting prevents each observation's outcome from training its own nuisance prediction. Propensity clipping controls variance but changes the practical target in regions without overlap; report the clipping rate.
+
+A regularized CART searches for heterogeneity in $\phi$. The tree proposes a partition; it does not define the final contributions. This orthogonalized target is usually less noisy and more robust to composition drift than the simple constant-propensity transformation.
+
+On holdout data, each frozen leaf receives exact KPI-mass contribution
+
+$$
+c(A)=w_1(A)r_1(A)-w_0(A)r_0(A).
+$$
+
+Because leaves partition the population, their contributions sum to the holdout aggregate change."""),
+code(r"""discovery, evaluation = train_test_split(
+    events, test_size=.45, random_state=42, stratify=events.period
+)
+discovery = discovery.copy()
+evaluation = evaluation.copy()
+
+features = ['channel', 'device', 'market', 'high_intent', 'tenure_months']
+categorical = ['channel', 'device', 'market']
+transformer = ColumnTransformer([
+    ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False), categorical),
+    ('num', 'passthrough', ['high_intent', 'tenure_months']),
+])
+X_discovery = transformer.fit_transform(discovery[features])
+X_evaluation = transformer.transform(evaluation[features])
+
+# Cross-fitted AIPW pseudo-outcome for descriptive period heterogeneity.
+t = discovery.period.to_numpy()
+y = discovery.converted.to_numpy()
+e_hat = np.zeros(len(discovery))
+m0_hat = np.zeros(len(discovery))
+m1_hat = np.zeros(len(discovery))
+folds = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+for fit_index, predict_index in folds.split(X_discovery, t):
+    propensity = LogisticRegression(max_iter=2_000).fit(
+        X_discovery[fit_index], t[fit_index]
+    )
+    e_hat[predict_index] = propensity.predict_proba(
+        X_discovery[predict_index]
+    )[:, 1]
+    for period, destination in [(0, m0_hat), (1, m1_hat)]:
+        period_fit = fit_index[t[fit_index] == period]
+        outcome_model = GradientBoostingClassifier(
+            n_estimators=80, max_depth=2, min_samples_leaf=150,
+            learning_rate=.04, random_state=42+period,
+        ).fit(X_discovery[period_fit], y[period_fit])
+        destination[predict_index] = outcome_model.predict_proba(
+            X_discovery[predict_index]
+        )[:, 1]
+
+e_raw = e_hat.copy()
+e_hat = np.clip(e_hat, .05, .95)
+discovery['change_target'] = (
+    m1_hat-m0_hat
+    + t*(y-m1_hat)/e_hat
+    - (1-t)*(y-m0_hat)/(1-e_hat)
+)
+overlap_diagnostic = pd.Series({
+    'minimum estimated propensity': e_raw.min(),
+    'maximum estimated propensity': e_raw.max(),
+    'share clipped': np.mean((e_raw < .05) | (e_raw > .95)),
+    'pseudo-outcome mean': discovery.change_target.mean(),
+})
+display(overlap_diagnostic.rename('overlap diagnostic'))
+
+hcd_tree = DecisionTreeRegressor(
+    max_depth=4, min_samples_leaf=500, ccp_alpha=0.00001,
+    random_state=42,
+).fit(X_discovery, discovery.change_target)
+
+tree_feature_names = list(transformer.get_feature_names_out())
+
+def describe_leaf(tree, target_leaf, names):
+    def walk(node, path):
+        if node == target_leaf:
+            return path
+        if tree.children_left[node] == tree.children_right[node]:
+            return None
+        feature = names[tree.feature[node]]
+        threshold = tree.threshold[node]
+        left = walk(
+            tree.children_left[node],
+            path + [f'{feature} <= {threshold:.3g}'],
+        )
+        if left is not None:
+            return left
+        return walk(
+            tree.children_right[node],
+            path + [f'{feature} > {threshold:.3g}'],
+        )
+    return ' AND '.join(walk(0, []) or ['root'])
+
+print(export_text(
+    hcd_tree, feature_names=tree_feature_names,
+    decimals=3,
+))
+evaluation['hcd_leaf'] = hcd_tree.apply(X_evaluation)"""),
+md(r"""## 6. Build the exact holdout leaf ledger
+
+The ledger keeps raw accounting separate from search. For each leaf it reports both period denominators, shares, rates, total contribution, Kitagawa mix/rate refinement, and uncertainty in its within-leaf rate change.
+
+Two identities must pass:
+
+$$
+\sum_A c(A)=R_1-R_0,
+\qquad
+\sum_A[c_w(A)+c_r(A)]=R_1-R_0.
+$$
+
+The uncertainty interval for $r_1(A)-r_0(A)$ is not an interval for the total contribution and is not selection-adjusted. It is a transparent holdout diagnostic after the hierarchy has been frozen."""),
+code(r"""def exact_leaf_ledger(data, leaf_col):
+    counts = data.groupby(['period', leaf_col]).converted.agg(['mean', 'size'])
+    rows = []
+    totals = data.groupby('period').size()
+    for leaf in sorted(data[leaf_col].unique()):
+        r0, n0 = counts.loc[(0, leaf), ['mean', 'size']]
+        r1, n1 = counts.loc[(1, leaf), ['mean', 'size']]
+        w0, w1 = n0/totals.loc[0], n1/totals.loc[1]
+        mix = (w1-w0)*(r1+r0)/2
+        rate = (r1-r0)*(w1+w0)/2
+        se_rate_change = np.sqrt(r1*(1-r1)/n1 + r0*(1-r0)/n0)
+        rows.append({
+            'leaf': leaf, 'n0': n0, 'n1': n1,
+            'w0': w0, 'w1': w1, 'r0': r0, 'r1': r1,
+            'rate_change': r1-r0,
+            'rate_ci_low': r1-r0-1.96*se_rate_change,
+            'rate_ci_high': r1-r0+1.96*se_rate_change,
+            'mix': mix, 'rate': rate,
+            'total_contribution': w1*r1-w0*r0,
+        })
+    return pd.DataFrame(rows).set_index('leaf')
+
+hcd_ledger = exact_leaf_ledger(evaluation, 'hcd_leaf')
+eval_rates = evaluation.groupby('period').converted.mean()
+eval_change = eval_rates.loc[1] - eval_rates.loc[0]
+checks = pd.Series({
+    'observed evaluation change': eval_change,
+    'sum total contributions': hcd_ledger.total_contribution.sum(),
+    'sum mix + rate': hcd_ledger[['mix', 'rate']].to_numpy().sum(),
+    'conservation error': hcd_ledger.total_contribution.sum()-eval_change,
+})
+hcd_ledger.sort_values('total_contribution'), checks"""),
+code(r"""hcd_ledger.sort_values('total_contribution')[['mix', 'rate']].plot.barh(
+    figsize=(9, 4.8)
+)
+plt.axvline(0, color='black', linewidth=.8)
+plt.xlabel('Contribution to evaluation-sample CVR change')
+plt.title('HCD leaf ledger: exact contribution frontier')
+plt.tight_layout()
+plt.show()"""),
+md(r"""### Fixed-hierarchy bootstrap
+
+Exactness is algebraic; the estimated contributions still have sampling uncertainty. Because the hierarchy was frozen before looking at `evaluation`, bootstrap observations separately within each period and recompute the complete ledger. Every bootstrap draw should conserve its own resampled aggregate change.
+
+This bootstrap conditions on the discovered tree. It captures uncertainty in shares and rates on evaluation data, but not variability from relearning the hierarchy. To assess full pipeline stability, repeat discovery inside every resample or across temporal folds and compare both leaf membership and contributions."""),
+code(r"""bootstrap_rng = np.random.default_rng(99)
+bootstrap_rows = []
+leaf_order = hcd_ledger.index.tolist()
+for draw in range(300):
+    sampled_parts = []
+    for period in [0, 1]:
+        period_data = evaluation.loc[evaluation.period.eq(period)]
+        sampled_parts.append(period_data.sample(
+            n=len(period_data), replace=True,
+            random_state=int(bootstrap_rng.integers(0, 2**31-1)),
+        ))
+    sampled = pd.concat(sampled_parts, ignore_index=True)
+    sampled_ledger = exact_leaf_ledger(sampled, 'hcd_leaf').reindex(leaf_order)
+    sampled_rates = sampled.groupby('period').converted.mean()
+    sampled_change = sampled_rates.loc[1]-sampled_rates.loc[0]
+    conservation_error = (
+        sampled_ledger.total_contribution.sum()-sampled_change
+    )
+    for leaf, contribution in sampled_ledger.total_contribution.items():
+        bootstrap_rows.append({
+            'draw': draw, 'leaf': leaf,
+            'total_contribution': contribution,
+            'conservation_error': conservation_error,
+        })
+
+bootstrap_results = pd.DataFrame(bootstrap_rows)
+bootstrap_intervals = bootstrap_results.groupby('leaf').total_contribution.quantile(
+    [.025, .5, .975]
+).unstack().rename(columns={.025: 'q025', .5: 'median', .975: 'q975'})
+bootstrap_diagnostic = pd.Series({
+    'draws': bootstrap_results.draw.nunique(),
+    'maximum absolute conservation error': (
+        bootstrap_results.groupby('draw').conservation_error.first().abs().max()
+    ),
+})
+bootstrap_intervals.join(hcd_ledger[['total_contribution']]), bootstrap_diagnostic"""),
+md(r"""## 7. Convert a pattern into a mechanism hypothesis
+
+Select a leaf because it is material, replicated, sufficiently large, and actionable—not merely because it ranks first. The tree and ledger support a statement such as:
+
+> “The largest negative holdout contribution is concentrated in the population defined by this frozen tree path; most of its contribution is associated with within-leaf rate change rather than share movement.”
+
+Next inspect funnel diagnostics, instrumentation, page speed, creative, inventory, and policy history. Suppose the product review suggests that the mobile landing page mismatches high-intent Paid Search queries. That is a mechanism hypothesis, still not a causal conclusion.
+
+The intervention is now explicit: a faster, query-matched landing experience. The discovered leaf determines eligibility for a future experiment; experiment assignment remains randomized inside that population."""),
+code(r"""# Choose the most negative replicated leaf and quantify its footprint.
+candidate_leaf = hcd_ledger.total_contribution.idxmin()
+candidate = hcd_ledger.loc[candidate_leaf]
+candidate_rule = describe_leaf(
+    hcd_tree.tree_, candidate_leaf, tree_feature_names
+)
+candidate_summary = pd.Series({
+    'candidate leaf': candidate_leaf,
+    'frozen rule': candidate_rule,
+    'evaluation baseline sessions': candidate.n0,
+    'evaluation comparison sessions': candidate.n1,
+    'rate change': candidate.rate_change,
+    'total KPI contribution': candidate.total_contribution,
+    'share of signed aggregate change': (
+        candidate.total_contribution / eval_change if eval_change != 0 else np.nan
+    ),
+})
+print('Frozen rule:', candidate_rule)
+print(candidate_summary.drop('frozen rule').to_string())"""),
+md(r"""## 8. Randomized causal validation
+
+Generate a future eligible population using the same feature schema, route it through the frozen tree, and retain the candidate leaf. Randomly assign the new landing experience:
+
+\[
+D_i\sim\operatorname{Bernoulli}(0.5).
+\]
+
+Under random assignment, consistency, and no interference, the difference in conversion rates estimates the sample average treatment effect for eligible sessions:
+
+\[
+\widehat\tau=ar Y_{D=1}-\bar Y_{D=0}.
+\]
+
+This effect is causal for the experimental population. Transporting it to future traffic additionally assumes that the eligible population and implementation remain comparable."""),
+code(r"""future = simulate_month(1, 30_000).drop(columns='converted')
+future_X = transformer.transform(future[features])
+future['hcd_leaf'] = hcd_tree.apply(future_X)
+eligible = future.loc[future.hcd_leaf.eq(candidate_leaf)].copy()
+eligible['treatment'] = rng.binomial(1, .5, len(eligible))
+
+# A transparent experimental DGP: the new experience adds 2.5 pp.
+baseline_probability = np.clip(
+    candidate.r1 + .012*(eligible.high_intent-eligible.high_intent.mean()),
+    .005, .95,
+)
+true_experiment_lift = .025
+eligible['converted'] = rng.binomial(
+    1, np.clip(baseline_probability
+               + true_experiment_lift*eligible.treatment, 0, 1)
+)
+
+experiment = eligible.groupby('treatment').converted.agg(['mean', 'size'])
+lift = experiment.loc[1, 'mean'] - experiment.loc[0, 'mean']
+lift_se = np.sqrt(
+    experiment.loc[1, 'mean']*(1-experiment.loc[1, 'mean'])/experiment.loc[1, 'size']
+    + experiment.loc[0, 'mean']*(1-experiment.loc[0, 'mean'])/experiment.loc[0, 'size']
+)
+experiment_readout = pd.Series({
+    'eligible sessions': len(eligible),
+    'control CVR': experiment.loc[0, 'mean'],
+    'treatment CVR': experiment.loc[1, 'mean'],
+    'estimated lift': lift,
+    '95% CI low': lift-1.96*lift_se,
+    '95% CI high': lift+1.96*lift_se,
+    'true simulated lift': true_experiment_lift,
+})
+experiment, experiment_readout"""),
+md(r"""## 9. Translate lift into an economic decision
+
+Statistical significance is not the launch criterion. Let $N_E$ be expected eligible sessions, $v$ contribution margin per incremental conversion, $C_F$ fixed implementation cost, and $c$ variable cost per treated session. Expected incremental value is
+
+\[
+V=N_E\widehat\tau v-C_F-N_Ec.
+\]
+
+Use the confidence interval to construct downside and upside scenarios. This calculation assumes the experimental lift transports to the planned rollout volume and that no general-equilibrium, novelty, or interference effects appear."""),
+code(r"""monthly_eligible_sessions = 80_000
+margin_per_conversion = 42.0
+fixed_monthly_cost = 35_000.0
+variable_cost_per_session = .08
+
+def net_value(effect):
+    return (
+        monthly_eligible_sessions * effect * margin_per_conversion
+        - fixed_monthly_cost
+        - monthly_eligible_sessions * variable_cost_per_session
+    )
+
+economics = pd.Series({
+    'incremental conversions at point estimate': monthly_eligible_sessions*lift,
+    'net monthly value — point estimate': net_value(lift),
+    'net monthly value — CI low': net_value(lift-1.96*lift_se),
+    'net monthly value — CI high': net_value(lift+1.96*lift_se),
+    'break-even lift': (
+        fixed_monthly_cost + monthly_eligible_sessions*variable_cost_per_session
+    ) / (monthly_eligible_sessions*margin_per_conversion),
+})
+economics"""),
+md(r"""## 10. Final Growth readout
+
+A defensible one-page conclusion contains four separate panels.
+
+### A. Observed KPI
+
+Report baseline, comparison, absolute percentage-point change, denominators, metric definition, and QA status.
+
+### B. Exact descriptive decomposition
+
+Report Kitagawa mix/rate totals for the joint operational hierarchy. When separate multidimensional labels are decision-relevant, add a Das Gupta/Shapley table with the factorization and reversal sensitivity stated explicitly. Report conservation errors for both views and never add their components together. Do not call either table incremental effects.
+
+### C. Replicated localization
+
+Report the frozen HCD leaf rule, both-period support, rates, total contribution, mix/rate refinement, and holdout interval. Note that ranking was learned on separate data.
+
+### D. Causal and economic validation
+
+Report randomization unit, eligibility, treatment/control sizes, lift and interval, guardrails, expected eligible volume, break-even lift, and value scenarios.
+
+The recommended action can be:
+
+- **launch** when replicated lift and downside economics clear thresholds;
+- **iterate and retest** when the point estimate is promising but uncertainty crosses break-even;
+- **do not launch** when the intervention fails even if the descriptive leaf was real.
+
+A failed experiment does not invalidate the decomposition. It rejects this intervention or mechanism as the remedy for the localized descriptive change.
+
+## Production checklist
+
+- [ ] Metric contract versioned and reviewed.
+- [ ] Numerator, denominator, population, and attribution window stable.
+- [ ] Known-segment decomposition conserves the observed change.
+- [ ] Adaptive discovery uses only approved pre-outcome descriptors.
+- [ ] Final hierarchy is frozen before evaluation.
+- [ ] Every leaf has support in both periods or an explicit entry/exit policy.
+- [ ] One partition frontier—and only one—is summed.
+- [ ] Descriptive and causal tables use different labels.
+- [ ] Experiment assignment, exclusions, and guardrails are preregistered.
+- [ ] Economics include uncertainty and transport assumptions.
+
+## Limitations
+
+- The simulation is cleaner than real event data and contains no delayed conversions.
+- A single discovery/evaluation split does not measure full hierarchy instability.
+- CART is used as a candidate partition generator, not a complete optimized HCD estimator.
+- The rate-change interval ignores uncertainty from selecting the hierarchy, mitigated but not eliminated by holdout evaluation.
+- The fixed-hierarchy bootstrap does not include variability from relearning the tree.
+- Multidimensional allocations are exact conditional on their hybrid-population factorization, not invariant scientific truths.
+- The experiment targets one discovered leaf; operational eligibility errors can dilute lift.
+- Exact conservation makes the ledger auditable, not causal or uniquely invariant to segmentation.
+
+## Exercises
+
+1. Add a new channel that appears only in period 1 and implement the entry/exit policy.
+2. Repeat discovery over 30 random splits and calculate leaf-membership stability.
+3. Replace the greedy tree score with contribution-at-risk.
+4. Compare direct channel × device decomposition with the HCD leaf frontier.
+5. Add a negative guardrail effect and formulate a constrained launch decision.
+6. Run the experiment on all traffic and estimate treatment-effect heterogeneity honestly.
+7. Replace conversion with revenue per session and determine which accounting identity changes.
+
+## References
+
+- Kitagawa, E. M. (1955). Components of a difference between two rates. *JASA*, 50, 1168–1194.
+- Das Gupta, P. (1978). A general method of decomposing a difference between two rates into several components. *Demography*, 15, 99–112.
+- Breiman, L., Friedman, J. H., Olshen, R. A., & Stone, C. J. (1984). *Classification and Regression Trees*.
+- Athey, S., & Imbens, G. (2016). Recursive partitioning for heterogeneous causal effects. *PNAS*, 113, 7353–7360.
+- Kohavi, R., Tang, D., & Xu, Y. (2020). *Trustworthy Online Controlled Experiments*. Cambridge University Press.
+- Working-paper companion: `working_paper/hierarchical_counterfactual_decomposition.md`."""),
+]
+
+# Normalize an accidental control character that can be introduced when this
+# generator is patched through JSON-aware clients (backspace + "ar" -> LaTeX bar).
+for growth_cell in growth_cells:
+    growth_cell.source = (
+        growth_cell.source
+        .replace(chr(8) + 'ar', r'\overline')
+        .replace(chr(9) + 'ext', r'\text')
+        .replace('\n\\[\n', '\n$$\n')
+        .replace('\n\\]\n', '\n$$\n')
+        .replace(r'\bar Y_{D=0}', r'\overline Y_{D=0}')
+    )
+
+growth_nb = nbf.v4.new_notebook(
+    cells=growth_cells,
+    metadata={
+        'kernelspec': {
+            'display_name': 'Python 3 (uv)', 'language': 'python', 'name': 'python3'
+        },
+        'language_info': {'name': 'python', 'version': '3.12'},
+    },
+)
+nbf.write(growth_nb, OUT / '07_complete_growth_workflow.ipynb')
+print('built 07_complete_growth_workflow.ipynb')

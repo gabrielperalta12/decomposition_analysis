@@ -10,6 +10,8 @@ This directory contains the publication-friendly Markdown exports of the execute
 4. [Oaxaca–Blinder and distributional decompositions](03_oaxaca_reweighting_rif.md)
 5. [Shapley, Aumann–Shapley, functional ANOVA, and SHAP](04_shapley_anova_ml.md)
 6. [Econometrics, causal inference, and defensible driver claims](05_econometrics_causality_driver_trees.md)
+7. [Subgroup Discovery and Pattern Mining](06_subgroup_discovery_pattern_mining.md)
+8. [Complete Growth workflow](07_complete_growth_workflow.md)
 
 ## Rebuild
 

@@ -393,6 +393,57 @@ $$C_j=\frac{1}{K!}\sum_{\pi}M_j^{(\pi)},\qquad
 
 This averaging removes order dependence and distributes all higher-order interactions. In modern terminology it is closely connected to a Shapley–Shorrocks allocation. Das Gupta's demographic framework also uses standardized rates to isolate factors while preserving the marginal structures relevant to the application.
 
+### What “multidimensional” means for an aggregate rate
+
+Suppose conversion is cross-classified by channel $i$ and device $j$. A useful sequential factorization is
+
+$$R_t=\sum_i p_{it}\sum_j q_{j\mid i,t}r_{ijt},$$
+
+where $p_{it}=P_t(\text{channel}=i)$ and $q_{j\mid i,t}=P_t(\text{device}=j\mid\text{channel}=i)$. There are now three changing blocks:
+
+1. $P$: channel composition $p$;
+2. $Q$: device-within-channel composition $q$;
+3. $R$: cell-specific conversion rates $r$.
+
+Define the hybrid standardized rate
+
+$$H(a,b,c)=\sum_i p_{i,a}\sum_j q_{j\mid i,b}r_{ij,c},\qquad a,b,c\in\{0,1\}.$$
+
+Every $H(a,b,c)$ is a coherent synthetic population: $p_{\cdot,a}$ sums to one and every conditional distribution $q_{\cdot\mid i,b}$ sums to one. The channel contribution, averaged over the six paths, can equivalently be written with subset weights:
+
+$$\begin{aligned}
+C_P={}&\frac13[H(1,0,0)-H(0,0,0)]\\
+&+\frac16[H(1,1,0)-H(0,1,0)]\\
+&+\frac16[H(1,0,1)-H(0,0,1)]\\
+&+\frac13[H(1,1,1)-H(0,1,1)].
+\end{aligned}$$
+
+$C_Q$ and $C_R$ follow by rotating the factor being replaced. The weights $1/3,1/6,1/6,1/3$ are the probabilities that zero, either one, or both of the other factors precede the target factor in a random order. Consequently,
+
+$$C_P+C_Q+C_R=H(1,1,1)-H(0,0,0).$$
+
+### The factorization is part of the estimand
+
+Writing $P(\text{channel})P(\text{device}\mid\text{channel})$ asks a different descriptive question from writing $P(\text{device})P(\text{channel}\mid\text{device})$. Both reproduce the observed joint distributions at the endpoints, but their intermediate standardized populations differ. Therefore the separate channel and device allocations need not agree. This is not an algebraic error: it is sensitivity to the declared standardization structure.
+
+If the joint cell shares $w_{ijt}$ are treated as one indivisible block, the analysis has only two factors—joint composition and cell rates—and cannot separately identify a channel-composition and device-composition component. Conversely, independently combining channel and device marginals implicitly assumes away their association and can create unrealistic hybrid cells.
+
+### Closed form for a multiplicative business identity
+
+For $F(x)=\prod_{k=1}^K x_k$, write $x_{k1}=x_{k0}+\Delta x_k$. Expansion gives one term for every nonempty interaction set $S$:
+
+$$F_1-F_0=\sum_{\varnothing\neq S\subseteq K}
+\left(\prod_{j\in S}\Delta x_j\right)
+\left(\prod_{\ell\notin S}x_{\ell0}\right).$$
+
+All-orders averaging allocates each $|S|$-way interaction equally among its participating factors. Hence
+
+$$C_j=\sum_{S\ni j}\frac{1}{|S|}
+\left(\prod_{k\in S}\Delta x_k\right)
+\left(\prod_{\ell\notin S}x_{\ell0}\right).$$
+
+For a growth identity such as revenue $=\text{traffic}\times\text{CVR}\times\text{AOV}$, this formula makes explicit where the pairwise and three-way interactions go. For a nonlinear or cross-classified rate, enumeration through $H$ is safer than trying to invent a product shortcut.
+
 
 ```python
 # Das Gupta / all-orders replacement for a 3-factor growth funnel.
@@ -502,6 +553,128 @@ Because response-category percentages sum to one, gains in some categories are b
 ### What the refinement does not solve
 
 It does not make category effects causal, choose theoretically relevant control variables, solve sparse cross-classified cells, or guarantee aggregation invariance. Chevan and Sutherland explicitly emphasize that any selected categorical variable will yield a result; scientific meaning depends on theoretically justified variable selection.
+
+### Applied templates for Chevan–Sutherland
+
+| Decision problem | Composition dimensions | Response | What category detail can reveal |
+|---|---|---|---|
+| Paid-media CVR | channel × device | purchase/no purchase | Paid Search gained mix but mobile Search lost within-cell CVR |
+| Lifecycle migration | acquisition cohort × tenure | free/trial/paid/churned | a larger young-cohort share versus worse paid retention inside mature cohorts |
+| Subscription churn | country × plan | churn/no churn | churn pressure concentrated in a plan within one market rather than a global plan effect |
+| Lead quality | source × firm size | MQL/SQL/won/lost | a source brings more volume while its distribution shifts toward low-quality states |
+| Health or labor rates | age × sex or education × region | event rate or response categories | composition shifts separated from changes within comparable cells |
+
+The operational sequence is: define the cross-classification before looking at results; construct coherent hybrid distributions; calculate variable-level Das Gupta effects; refine each replacement marginal into its categories; verify that categories sum to their parent factor and parent factors sum to $R_1-R_0$; then repeat under defensible alternative orderings, segment definitions, and sparse-cell rules.
+
+### A two-dimensional growth-marketing refinement
+
+For the factorization $p_iq_{j\mid i}r_{ij}$, a replacement of $P$ has category-$i$ marginal
+
+$$m_{P,i}=\Delta p_i\sum_j q_{j\mid i}^{*}r_{ij}^{*},$$
+
+a replacement of $Q$ has device-category-$j$ marginal
+
+$$m_{Q,j}=\sum_i p_i^{*}\Delta q_{j\mid i}r_{ij}^{*},$$
+
+and a replacement of the rate block has cell marginal
+
+$$m_{R,ij}=p_i^{*}q_{j\mid i}^{*}\Delta r_{ij}.$$
+
+The asterisk means “use the state reached at that point in the path.” Average these marginals over every factor order. This preserves two nested adding-up identities:
+
+$$\sum_i C_{P,i}=C_P,\qquad \sum_j C_{Q,j}=C_Q,
+\qquad \sum_{ij}C_{R,ij}=C_R,$$
+
+and $C_P+C_Q+C_R=R_1-R_0$. Crucially, channel categories are summed only to the channel parent and device categories only to the device parent. Adding a separate one-way channel decomposition to a separate one-way device decomposition would count the same aggregate change twice.
+
+
+```python
+# Chevan–Sutherland-style refinement for channel × device.
+# q is device conditional on channel; every row therefore sums to one.
+channels = ['Paid Search', 'Organic']
+devices = ['Mobile', 'Desktop']
+p = [np.array([.55, .45]), np.array([.48, .52])]
+q = [np.array([[.70, .30], [.60, .40]]),
+     np.array([[.76, .24], [.64, .36]])]
+r = [np.array([[.045, .080], [.035, .065]]),
+     np.array([[.041, .086], [.040, .070]])]
+
+factor_order = ['channel mix', 'device|channel mix', 'cell rate']
+category_totals = {
+    'channel mix': np.zeros(len(channels)),
+    'device|channel mix': np.zeros(len(devices)),
+    'cell rate': np.zeros((len(channels), len(devices))),
+}
+
+def aggregate_rate(state):
+    return np.sum(p[state[0]][:, None] * q[state[1]] * r[state[2]])
+
+for order in permutations(range(3)):
+    state = [0, 0, 0]
+    for factor in order:
+        if factor == 0:
+            marginal = (p[1] - p[0])[:, None] * q[state[1]] * r[state[2]]
+            category_totals['channel mix'] += marginal.sum(axis=1) / 6
+        elif factor == 1:
+            marginal = p[state[0]][:, None] * (q[1] - q[0]) * r[state[2]]
+            category_totals['device|channel mix'] += marginal.sum(axis=0) / 6
+        else:
+            marginal = p[state[0]][:, None] * q[state[1]] * (r[1] - r[0])
+            category_totals['cell rate'] += marginal / 6
+        state[factor] = 1
+
+rows = []
+rows += [('channel mix', name, value)
+         for name, value in zip(channels, category_totals['channel mix'])]
+rows += [('device|channel mix', name, value)
+         for name, value in zip(devices, category_totals['device|channel mix'])]
+rows += [('cell rate', f'{channels[i]} × {devices[j]}',
+          category_totals['cell rate'][i, j])
+         for i in range(2) for j in range(2)]
+
+refined = pd.DataFrame(rows, columns=['parent factor', 'category', 'contribution'])
+parent_check = refined.groupby('parent factor')['contribution'].sum()
+identity_check = pd.Series({
+    'baseline rate': aggregate_rate([0, 0, 0]),
+    'comparison rate': aggregate_rate([1, 1, 1]),
+    'observed change': aggregate_rate([1, 1, 1]) - aggregate_rate([0, 0, 0]),
+    'allocated change': refined['contribution'].sum(),
+})
+refined, parent_check, identity_check
+```
+
+
+
+
+    (        parent factor               category  contribution
+     0         channel mix            Paid Search       -0.0038
+     1         channel mix                Organic        0.0034
+     2  device|channel mix                 Mobile        0.0021
+     3  device|channel mix                Desktop       -0.0039
+     4           cell rate   Paid Search × Mobile       -0.0015
+     5           cell rate  Paid Search × Desktop        0.0008
+     6           cell rate       Organic × Mobile        0.0015
+     7           cell rate      Organic × Desktop        0.0009,
+     parent factor
+     cell rate             0.0018
+     channel mix          -0.0003
+     device|channel mix   -0.0018
+     Name: contribution, dtype: float64,
+     baseline rate       0.0517
+     comparison rate     0.0513
+     observed change    -0.0004
+     allocated change   -0.0004
+     dtype: float64)
+
+
+
+### How to read the two-dimensional result
+
+Read the first output inside each parent factor. The Paid Search and Organic rows partition only the **channel-mix** effect. Mobile and Desktop partition only the **device-within-channel** effect. The four channel × device rows partition the **within-cell-rate** effect. The parent check then sums those category rows, and the identity check verifies that the three parents reproduce the observed aggregate change.
+
+A negative Paid Search mix contribution does not say Paid Search caused conversion to fall. It says its share changed in a direction that lowers the standardized aggregate rate under the averaged replacement rule. Likewise, a positive Mobile rate contribution can coexist with a negative Mobile composition contribution. This distinction is exactly why category-level reporting is useful.
+
+For production use, report contributions in percentage points, include cell counts or effective sample sizes, flag cells created or removed between periods, and bootstrap the complete decomposition if sampling uncertainty matters. If a rate is undefined because a cell has zero exposure, use the explicit entrant/exit or reference-rate conventions discussed later; never silently replace the missing rate with zero.
 
 
 ```python
