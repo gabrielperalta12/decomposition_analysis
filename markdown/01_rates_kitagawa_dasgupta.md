@@ -31,7 +31,7 @@ Weighted averages and percentage-point changes. Notebook 00's distinction betwee
 | $R_t$ | aggregate rate $\sum_gw_{gt}r_{gt}$ |
 | $C_w,C_r$ | mix and within-segment-rate contributions |
 
-The sequence moves from Kitagawa to Stepwise and Das Gupta, then to Chevan–Sutherland's categorical refinement and Shorrocks's general axiomatic rule. It closes with two practical complications: missing segment rates and multiperiod chaining.
+The central route is Kitagawa $\rightarrow$ Das Gupta $\rightarrow$ Chevan–Sutherland: from two blocks, to multiple compositional variables, to categories nested inside those variables. Stepwise replacement then exposes the computational path problem, and Shorrocks supplies a general axiomatic rule. The notebook closes with missing segment rates and multiperiod chaining.
 
 ## Kitagawa identity: intuition
 
@@ -269,6 +269,72 @@ Then $w_{Ht}r_{Ht}=\sum_{g\in H}w_{gt}r_{gt}$. Therefore $R_0$, $R_1$, and $R_1-
 The fine decomposition evaluates every $\Delta w_g$ against its own average rate. The collapsed decomposition first creates a changing within-block weighted rate $r_{Ht}$ and then treats that block as one segment. Variation in shares **inside** $H$ is no longer visible as mix; part of it is absorbed into the block's rate component. Thus the total remains exact, while the labels `mix` and `rate` are reallocated.
 
 This is not a coding inconsistency. It is a lack of **aggregation invariance**. The decomposition answers a question conditional on the chosen partition. Report the segmentation rule and repeat the analysis at substantively plausible levels.
+
+## The methodological route: Kitagawa $\rightarrow$ Das Gupta $\rightarrow$ Chevan–Sutherland
+
+These are not three unrelated estimators. They form a progressively finer route through the same accounting problem.
+
+| Stage | Question answered | Exact output | Limitation that motivates the next stage |
+|---|---|---|---|
+| **Kitagawa (1955)** | Did an aggregate rate change because group shares changed or because rates changed within groups? | one composition effect plus one rate effect | with several compositional variables, treating their cross-products as separate interactions becomes unwieldy |
+| **Das Gupta (1978, 1993)** | How much is associated with each of several cross-classified compositional variables? | one composition effect per variable plus one overall rate effect | a variable total such as “channel” does not reveal which channel categories matter |
+| **Chevan–Sutherland (2009)** | Which categories inside each Das Gupta variable produce its composition and rate contributions? | additive category effects nested inside the variable effects | the result remains descriptive and can be unstable in sparse or substantively arbitrary partitions |
+
+### Stage 1 — Kitagawa: the two-block identity
+
+For a single grouping variable, Kitagawa writes
+
+$$
+\Delta R=C_W^{K}+C_R^{K}.
+$$
+
+$C_W^{K}$ changes the observed composition while standardizing rates symmetrically; $C_R^{K}$ changes the within-group rates while standardizing composition symmetrically. This answers **mix versus within-segment performance**, but it treats the segmentation as one joint partition.
+
+### Stage 2 — Das Gupta: several compositional variables
+
+Let $v=1,\ldots,V$ index variables such as channel, device, region, and tenure. Das Gupta constructs coherent standardized rates and distributes cross-variable interaction terms symmetrically, yielding
+
+$$
+\boxed{\Delta R=C_R^{DG}+\sum_{v=1}^{V}C_v^{DG}}.
+$$
+
+Each $C_v^{DG}$ is the composition effect of a variable, while $C_R^{DG}$ is the overall change in cell-specific rates. The standardized hybrids specify what changes and what remains fixed; exactness alone does not determine that choice.
+
+### Stage 3 — Chevan–Sutherland: categories nested inside variables
+
+If $\mathcal K_v$ is the category set of variable $v$, Chevan–Sutherland refine each parent composition effect:
+
+$$
+C_v^{DG}=\sum_{k\in\mathcal K_v}C_{v,k}^{CS}.
+$$
+
+They also allocate the overall rate effect across the $V$ variable families and their categories:
+
+$$
+C_R^{DG}=\sum_{v=1}^{V}\sum_{k\in\mathcal K_v}C_{R,vk}^{CS},
+$$
+
+using a $1/V$ scaling in each variable family so that the same overall rate effect is not counted $V$ times. Define the total effect reported for category $k$ of variable $v$ as
+
+$$
+CE_{v,k}=C_{v,k}^{CS}+C_{R,vk}^{CS}.
+$$
+
+The nested conservation identity is therefore
+
+$$
+\boxed{\Delta R=\sum_{v=1}^{V}\sum_{k\in\mathcal K_v}CE_{v,k}}.
+$$
+
+This is a **secondary decomposition**: Chevan–Sutherland do not replace Das Gupta; they open each Das Gupta parent effect and show its category-level anatomy. Nor should one add separate one-way Kitagawa decompositions for channel, device, and region: each would reproduce the total contrast and the sum would double- or triple-count it.
+
+### Growth interpretation
+
+- **Kitagawa:** how much of the CVR change is joint segment mix versus within-joint-segment CVR?
+- **Das Gupta:** how much is channel composition, device composition, region composition, and the overall cell-rate effect?
+- **Chevan–Sutherland:** inside those parents, were Paid Search or Organic, Mobile or Desktop, and particular regions positive or negative contributors?
+
+Stepwise replacement, introduced next, is the computational bridge that makes hybrid states and order dependence visible. It is not a fourth substantive endpoint in this historical route.
 
 ## Stepwise Replacement: the bridge from Kitagawa to Das Gupta
 
@@ -522,6 +588,52 @@ $$R_1-R_0=\sum_g(C_{w,g}+C_{r,g}).$$
 
 With one composition variable, these are exactly the segment-level Kitagawa contributions already calculated in the worked example. The contribution of Chevan–Sutherland is most valuable with several cross-classified variables, where effects can be reported both by variable and by category.
 
+### Paper-faithful nested additivity
+
+For two compositional variables $I$ and $J$, Chevan–Sutherland begin from the Das Gupta identity. Their paper writes the contrast as $t_{..}-T_{..}$; throughout this notebook we reverse the labels and use comparison minus baseline, $\Delta R=R_1-R_0$:
+
+$$
+\Delta R=C_R+C_I+C_J.
+$$
+
+They attach category subscripts to the standardized terms for each population so that the parent effects can be recovered exactly. Under this notebook's orientation,
+
+$$
+C_I=\sum_i\{I(A)_{i.}-I(a)_{i.}\},\qquad
+C_J=\sum_j\{J(B)_{.j}-J(b)_{.j}\}.
+$$
+
+The overall rate effect is likewise reported through category families. With $V$ compositional variables, every family receives a $1/V$ share before it is divided among its categories. Hence
+
+$$
+C_R=\sum_i\{R(T)_{i.}-R(t)_{i.}\}
+    +\sum_j\{R(T)_{.j}-R(t)_{.j}\}
+$$
+
+for $V=2$, where each family contains one half of the overall rate allocation. The paper first defines a category effect *inside each population*,
+
+$$
+CE^{(1)}_{i.}=I(A)_{i.}+R(T)_{i.},\qquad
+CE^{(1)}_{.j}=J(B)_{.j}+R(T)_{.j},
+$$
+
+with analogous $CE^{(0)}$ terms for the baseline population. The contribution to the between-period contrast is their difference:
+
+$$
+C_{I,i}=CE^{(1)}_{i.}-CE^{(0)}_{i.},\qquad
+C_{J,j}=CE^{(1)}_{.j}-CE^{(0)}_{.j}.
+$$
+
+Only these **differences** add to the contrast:
+
+$$
+\boxed{\Delta R=\sum_i C_{I,i}+\sum_j C_{J,j}}.
+$$
+
+This double hierarchy—within-population category effects, their between-population differences, and finally the crude-rate difference—is the central Chevan–Sutherland result.
+
+The construction depends on Das Gupta's joint cross-classification and standardized composition coefficients. It is **not** obtained by running an independent Kitagawa decomposition for $I$ and another for $J$: both independent runs would allocate the full crude-rate difference and their sum would overcount it.
+
 ### Cross-classified interpretation
 
 Suppose conversion is cross-classified by channel $i$ and device $j$:
@@ -566,31 +678,41 @@ It does not make category effects causal, choose theoretically relevant control 
 
 The operational sequence is: define the cross-classification before looking at results; construct coherent hybrid distributions; calculate variable-level Das Gupta effects; refine each replacement marginal into its categories; verify that categories sum to their parent factor and parent factors sum to $R_1-R_0$; then repeat under defensible alternative orderings, segment definitions, and sparse-cell rules.
 
-### A two-dimensional growth-marketing refinement
+### Exact two-variable Chevan–Sutherland implementation
 
-For the factorization $p_iq_{j\mid i}r_{ij}$, a replacement of $P$ has category-$i$ marginal
+Let $w_{ij,t}$ be the joint share of channel $I=i$ and device $J=j$. Das Gupta's symmetric composition coefficients factor every joint share as
 
-$$m_{P,i}=\Delta p_i\sum_j q_{j\mid i}^{*}r_{ij}^{*},$$
+$$
+a_{ij}b_{ij}=w_{ij,0},\qquad A_{ij}B_{ij}=w_{ij,1},
+$$
 
-a replacement of $Q$ has device-category-$j$ marginal
+where
 
-$$m_{Q,j}=\sum_i p_i^{*}\Delta q_{j\mid i}r_{ij}^{*},$$
+$$
+a_{ij}=\sqrt{w_{ij,0}\frac{w_{i.,0}}{w_{.j,0}}},\qquad
+b_{ij}=\sqrt{w_{ij,0}\frac{w_{.j,0}}{w_{i.,0}}},
+$$
 
-and a replacement of the rate block has cell marginal
+and $A,B$ are defined analogously for period 1. With bars denoting two-period arithmetic averages, the category composition contributions are
 
-$$m_{R,ij}=p_i^{*}q_{j\mid i}^{*}\Delta r_{ij}.$$
+$$
+C_{I,i}=\sum_j\bar r_{ij}\,\bar b_{ij}(A_{ij}-a_{ij}),\qquad
+C_{J,j}=\sum_i\bar r_{ij}\,\bar a_{ij}(B_{ij}-b_{ij}).
+$$
 
-The asterisk means “use the state reached at that point in the path.” Average these marginals over every factor order. This preserves two nested adding-up identities:
+For $V=2$, category rate contributions are
 
-$$\sum_i C_{P,i}=C_P,\qquad \sum_j C_{Q,j}=C_Q,
-\qquad \sum_{ij}C_{R,ij}=C_R,$$
+$$
+C_{R,I,i}=\frac12\sum_j\bar w_{ij}\Delta r_{ij},\qquad
+C_{R,J,j}=\frac12\sum_i\bar w_{ij}\Delta r_{ij}.
+$$
 
-and $C_P+C_Q+C_R=R_1-R_0$. Crucially, channel categories are summed only to the channel parent and device categories only to the device parent. Adding a separate one-way channel decomposition to a separate one-way device decomposition would count the same aggregate change twice.
+Each variable family receives one half of the rate effect; together they receive it exactly once. The code below implements these published equations and asserts all nesting identities.
 
 
 ```python
-# Chevan–Sutherland-style refinement for channel × device.
-# q is device conditional on channel; every row therefore sums to one.
+# Exact Chevan–Sutherland refinement for channel × device (V = 2).
+# q is device conditional on channel; p[:, None] * q gives joint shares.
 channels = ['Paid Search', 'Organic']
 devices = ['Mobile', 'Desktop']
 p = [np.array([.55, .45]), np.array([.48, .52])]
@@ -598,68 +720,85 @@ q = [np.array([[.70, .30], [.60, .40]]),
      np.array([[.76, .24], [.64, .36]])]
 r = [np.array([[.045, .080], [.035, .065]]),
      np.array([[.041, .086], [.040, .070]])]
+w = [p[t][:, None] * q[t] for t in (0, 1)]
 
-factor_order = ['channel mix', 'device|channel mix', 'cell rate']
-category_totals = {
-    'channel mix': np.zeros(len(channels)),
-    'device|channel mix': np.zeros(len(devices)),
-    'cell rate': np.zeros((len(channels), len(devices))),
-}
+def das_gupta_coefficients(joint_share):
+    # Symmetric a,b coefficients; their product reconstructs joint shares.
+    row = joint_share.sum(axis=1)
+    col = joint_share.sum(axis=0)
+    if np.any(joint_share <= 0) or np.any(row <= 0) or np.any(col <= 0):
+        raise ValueError('Original coefficients require positive joint and marginal shares.')
+    coef_i = np.sqrt(joint_share * row[:, None] / col[None, :])
+    coef_j = np.sqrt(joint_share * col[None, :] / row[:, None])
+    np.testing.assert_allclose(coef_i * coef_j, joint_share)
+    return coef_i, coef_j
 
-def aggregate_rate(state):
-    return np.sum(p[state[0]][:, None] * q[state[1]] * r[state[2]])
+a, b = das_gupta_coefficients(w[0])
+A, B = das_gupta_coefficients(w[1])
+r_bar = (r[0] + r[1]) / 2
+w_bar = (w[0] + w[1]) / 2
+a_bar, b_bar = (a + A) / 2, (b + B) / 2
 
-for order in permutations(range(3)):
-    state = [0, 0, 0]
-    for factor in order:
-        if factor == 0:
-            marginal = (p[1] - p[0])[:, None] * q[state[1]] * r[state[2]]
-            category_totals['channel mix'] += marginal.sum(axis=1) / 6
-        elif factor == 1:
-            marginal = p[state[0]][:, None] * (q[1] - q[0]) * r[state[2]]
-            category_totals['device|channel mix'] += marginal.sum(axis=0) / 6
-        else:
-            marginal = p[state[0]][:, None] * q[state[1]] * (r[1] - r[0])
-            category_totals['cell rate'] += marginal / 6
-        state[factor] = 1
+composition_I = (r_bar * b_bar * (A - a)).sum(axis=1)
+composition_J = (r_bar * a_bar * (B - b)).sum(axis=0)
+rate_I = (w_bar * (r[1] - r[0]) / 2).sum(axis=1)  # 1 / V, V=2
+rate_J = (w_bar * (r[1] - r[0]) / 2).sum(axis=0)
 
 rows = []
-rows += [('channel mix', name, value)
-         for name, value in zip(channels, category_totals['channel mix'])]
-rows += [('device|channel mix', name, value)
-         for name, value in zip(devices, category_totals['device|channel mix'])]
-rows += [('cell rate', f'{channels[i]} × {devices[j]}',
-          category_totals['cell rate'][i, j])
-         for i in range(2) for j in range(2)]
+rows += [('channel (I)', name, c, rr, c + rr)
+         for name, c, rr in zip(channels, composition_I, rate_I)]
+rows += [('device (J)', name, c, rr, c + rr)
+         for name, c, rr in zip(devices, composition_J, rate_J)]
+chevan_categories = pd.DataFrame(
+    rows, columns=['variable family', 'category', 'composition', 'rate', 'total']
+)
 
-refined = pd.DataFrame(rows, columns=['parent factor', 'category', 'contribution'])
-parent_check = refined.groupby('parent factor')['contribution'].sum()
-identity_check = pd.Series({
-    'baseline rate': aggregate_rate([0, 0, 0]),
-    'comparison rate': aggregate_rate([1, 1, 1]),
-    'observed change': aggregate_rate([1, 1, 1]) - aggregate_rate([0, 0, 0]),
-    'allocated change': refined['contribution'].sum(),
+chevan_R0, chevan_R1 = np.sum(w[0] * r[0]), np.sum(w[1] * r[1])
+parent_check = pd.Series({
+    'I composition': composition_I.sum(),
+    'J composition': composition_J.sum(),
+    'overall rate': rate_I.sum() + rate_J.sum(),
 })
-refined, parent_check, identity_check
+identity_check = pd.Series({
+    'baseline rate': chevan_R0,
+    'comparison rate': chevan_R1,
+    'observed change': chevan_R1 - chevan_R0,
+    'allocated change': chevan_categories['total'].sum(),
+})
+
+np.testing.assert_allclose(rate_I.sum(), rate_J.sum())
+np.testing.assert_allclose(parent_check.sum(), chevan_R1 - chevan_R0)
+np.testing.assert_allclose(chevan_categories['total'].sum(), chevan_R1 - chevan_R0)
+
+# Cross-check the pedagogical calculation against the production implementation.
+from pathlib import Path
+import sys
+project_root = Path.cwd().parent if Path.cwd().name == 'notebooks' else Path.cwd()
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+from scripts.rate_decomposition import chevan_sutherland_two_variable
+production_chevan = chevan_sutherland_two_variable(
+    w[0], w[1], r[0], r[1], row_labels=channels, column_labels=devices
+)
+np.testing.assert_allclose(
+    production_chevan.categories[['composition', 'rate', 'total']],
+    chevan_categories[['composition', 'rate', 'total']],
+)
+chevan_categories, parent_check, identity_check
 ```
 
 
 
 
-    (        parent factor               category  contribution
-     0         channel mix            Paid Search       -0.0038
-     1         channel mix                Organic        0.0034
-     2  device|channel mix                 Mobile        0.0021
-     3  device|channel mix                Desktop       -0.0039
-     4           cell rate   Paid Search × Mobile       -0.0015
-     5           cell rate  Paid Search × Desktop        0.0008
-     6           cell rate       Organic × Mobile        0.0015
-     7           cell rate      Organic × Desktop        0.0009,
-     parent factor
-     cell rate             0.0018
-     channel mix          -0.0003
-     device|channel mix   -0.0018
-     Name: contribution, dtype: float64,
+    (  variable family     category  composition    rate   total
+     0     channel (I)  Paid Search      -0.0041 -0.0003 -0.0045
+     1     channel (I)      Organic       0.0036  0.0012  0.0048
+     2      device (J)       Mobile       0.0019  0.0000  0.0019
+     3      device (J)      Desktop      -0.0035  0.0009 -0.0026,
+     I composition   -0.0005
+     J composition   -0.0016
+     overall rate     0.0018
+     dtype: float64,
      baseline rate       0.0517
      comparison rate     0.0513
      observed change    -0.0004
@@ -670,9 +809,9 @@ refined, parent_check, identity_check
 
 ### How to read the two-dimensional result
 
-Read the first output inside each parent factor. The Paid Search and Organic rows partition only the **channel-mix** effect. Mobile and Desktop partition only the **device-within-channel** effect. The four channel × device rows partition the **within-cell-rate** effect. The parent check then sums those category rows, and the identity check verifies that the three parents reproduce the observed aggregate change.
+The Paid Search and Organic rows partition the $I$ composition effect and one half of the overall rate effect. Mobile and Desktop partition the $J$ composition effect and the other half. `parent_check` recovers the Das Gupta parents, while `identity_check` verifies both parent-to-total and category-to-total conservation.
 
-A negative Paid Search mix contribution does not say Paid Search caused conversion to fall. It says its share changed in a direction that lowers the standardized aggregate rate under the averaged replacement rule. Likewise, a positive Mobile rate contribution can coexist with a negative Mobile composition contribution. This distinction is exactly why category-level reporting is useful.
+A negative Paid Search composition contribution does not say Paid Search caused conversion to fall. It says its standardized composition coefficients changed in a direction that lowers the aggregate rate under the Das Gupta rule. Likewise, a positive Mobile rate contribution can coexist with a negative Mobile composition contribution. This distinction is exactly why category-level reporting is useful.
 
 For production use, report contributions in percentage points, include cell counts or effective sample sizes, flag cells created or removed between periods, and bootstrap the complete decomposition if sampling uncertainty matters. If a rate is undefined because a cell has zero exposure, use the explicit entrant/exit or reference-rate conventions discussed later; never silently replace the missing rate with zero.
 
@@ -1102,13 +1241,15 @@ Across every row, exactness means that allocated components reproduce the chosen
 ## Takeaways and bridge to Notebook 02
 
 1. Kitagawa separates mix from within-segment rate changes exactly.
-2. The equal interaction split is symmetric but conventional.
-3. Chevan–Sutherland exposes additive category effects and extends the framework to polytomous distributions.
-4. Shorrocks generalizes all-orders marginal allocation to arbitrary indicators and explicit hierarchies.
-5. An absent-period segment rate is not observed: the entrant total is identified, but its mix/rate split is not.
-6. Chained and direct multiperiod totals agree, while their component allocations can differ.
-7. Segmentation, hierarchy, time path, and sampling uncertainty can materially change the story.
-8. Use causal language only with a separate design.
+2. Das Gupta extends the problem to several cross-classified compositional variables and symmetrically absorbs their interactions.
+3. Chevan–Sutherland is a secondary decomposition: categories sum to Das Gupta parent effects, and parents sum to the observed change.
+4. The $1/V$ rate allocation prevents counting the overall rate effect once for every compositional variable.
+5. The equal interaction split and every hybrid standardization rule are symmetric conventions, not identified causal effects.
+6. Shorrocks generalizes all-orders marginal allocation to arbitrary indicators and explicit hierarchies.
+7. An absent-period segment rate is not observed: the entrant total is identified, but its mix/rate split is not.
+8. Chained and direct multiperiod totals agree, while their component allocations can differ.
+9. Segmentation, hierarchy, time path, and sampling uncertainty can materially change the story.
+10. Use causal language only with a separate design.
 
 Notebook 02 moves from weighted rates to totals generated by multiplicative business identities.
 

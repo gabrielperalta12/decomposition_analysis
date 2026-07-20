@@ -74,6 +74,23 @@ class MultiperiodResult:
     comparison: pd.DataFrame
 
 
+@dataclass(frozen=True)
+class ChevanSutherlandResult:
+    """Exact two-variable categorical refinement of a Das Gupta rate decomposition."""
+
+    categories: pd.DataFrame
+    parents: pd.Series
+    summary: pd.Series
+
+    def assert_exact(self, atol: float = 1e-12) -> None:
+        """Raise when category and parent allocations do not reproduce the change."""
+        if not np.isclose(self.summary["identity_error"], 0.0, atol=atol, rtol=0.0):
+            raise DecompositionError(
+                f"Chevan-Sutherland decomposition is not exact: "
+                f"error={self.summary['identity_error']!r}"
+            )
+
+
 def _require_columns(frame: pd.DataFrame, columns: Sequence[str]) -> None:
     missing = [column for column in columns if column not in frame.columns]
     if missing:
@@ -264,6 +281,109 @@ def chevan_categorical_report(result: KitagawaResult) -> pd.DataFrame:
         "observed_change"
     ]
     return report
+
+
+def chevan_sutherland_two_variable(
+    joint_share0: np.ndarray,
+    joint_share1: np.ndarray,
+    rate0: np.ndarray,
+    rate1: np.ndarray,
+    *,
+    row_labels: Sequence[Hashable] | None = None,
+    column_labels: Sequence[Hashable] | None = None,
+    atol: float = 1e-12,
+) -> ChevanSutherlandResult:
+    """Refine a two-variable Das Gupta decomposition into category effects.
+
+    The four arrays must have the same ``(I, J)`` shape. Joint shares must be
+    strictly positive and sum to one in each period. Strict positivity is not
+    cosmetic: the original symmetric composition coefficients contain ratios
+    of cell and marginal shares, so structural zeros require a separately
+    declared pooling, smoothing, or limiting convention.
+
+    Returns category-level composition, rate, and total contributions for both
+    variable families. Following Chevan and Sutherland (2009), the overall
+    rate effect is divided by ``V=2`` before it is reported by each family.
+    """
+    w0, w1, r0, r1 = (
+        np.asarray(value, dtype=float)
+        for value in (joint_share0, joint_share1, rate0, rate1)
+    )
+    if w0.ndim != 2 or any(value.shape != w0.shape for value in (w1, r0, r1)):
+        raise DecompositionError("All inputs must be two-dimensional arrays of equal shape")
+    if not all(np.isfinite(value).all() for value in (w0, w1, r0, r1)):
+        raise DecompositionError("Shares and rates must be finite")
+    if np.any(w0 <= 0) or np.any(w1 <= 0):
+        raise DecompositionError(
+            "Original Chevan-Sutherland coefficients require positive joint shares"
+        )
+    for name, weights in (("joint_share0", w0), ("joint_share1", w1)):
+        if not np.isclose(weights.sum(), 1.0, atol=atol, rtol=0.0):
+            raise DecompositionError(f"{name} must sum to one")
+
+    n_i, n_j = w0.shape
+    rows = list(range(n_i)) if row_labels is None else list(row_labels)
+    columns = list(range(n_j)) if column_labels is None else list(column_labels)
+    if len(rows) != n_i or len(set(rows)) != n_i:
+        raise DecompositionError("row_labels must be unique and match the row count")
+    if len(columns) != n_j or len(set(columns)) != n_j:
+        raise DecompositionError("column_labels must be unique and match the column count")
+
+    def coefficients(weights: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        row_marginal = weights.sum(axis=1)
+        column_marginal = weights.sum(axis=0)
+        coef_i = np.sqrt(weights * row_marginal[:, None] / column_marginal[None, :])
+        coef_j = np.sqrt(weights * column_marginal[None, :] / row_marginal[:, None])
+        if not np.allclose(coef_i * coef_j, weights, atol=atol, rtol=0.0):
+            raise DecompositionError("Composition coefficients do not reconstruct shares")
+        return coef_i, coef_j
+
+    a, b = coefficients(w0)
+    A, B = coefficients(w1)
+    rate_bar, weight_bar = (r0 + r1) / 2, (w0 + w1) / 2
+    a_bar, b_bar = (a + A) / 2, (b + B) / 2
+    composition_i = (rate_bar * b_bar * (A - a)).sum(axis=1)
+    composition_j = (rate_bar * a_bar * (B - b)).sum(axis=0)
+    rate_i = (weight_bar * (r1 - r0) / 2).sum(axis=1)
+    rate_j = (weight_bar * (r1 - r0) / 2).sum(axis=0)
+
+    records = [
+        ("I", label, comp, rate, comp + rate)
+        for label, comp, rate in zip(rows, composition_i, rate_i)
+    ] + [
+        ("J", label, comp, rate, comp + rate)
+        for label, comp, rate in zip(columns, composition_j, rate_j)
+    ]
+    categories = pd.DataFrame(
+        records,
+        columns=["variable_family", "category", "composition", "rate", "total"],
+    )
+    parents = pd.Series(
+        {
+            "I_composition": float(composition_i.sum()),
+            "J_composition": float(composition_j.sum()),
+            "overall_rate": float(rate_i.sum() + rate_j.sum()),
+        }
+    )
+    baseline = float(np.sum(w0 * r0))
+    comparison = float(np.sum(w1 * r1))
+    allocated = float(categories["total"].sum())
+    summary = pd.Series(
+        {
+            "baseline_rate": baseline,
+            "comparison_rate": comparison,
+            "observed_change": comparison - baseline,
+            "allocated_change": allocated,
+            "identity_error": allocated - (comparison - baseline),
+        }
+    )
+    if not np.isclose(rate_i.sum(), rate_j.sum(), atol=atol, rtol=0.0):
+        raise DecompositionError("Each variable family must receive half the rate effect")
+    if not np.isclose(parents.sum(), comparison - baseline, atol=atol, rtol=0.0):
+        raise DecompositionError("Parent effects do not reproduce the observed change")
+    result = ChevanSutherlandResult(categories, parents, summary)
+    result.assert_exact(atol)
+    return result
 
 
 def stepwise_decomposition(
@@ -509,12 +629,14 @@ def multiperiod_kitagawa(
 
 
 __all__ = [
+    "ChevanSutherlandResult",
     "DecompositionError",
     "KitagawaResult",
     "MultiperiodResult",
     "PathDecompositionResult",
     "all_orders_decomposition",
     "chevan_categorical_report",
+    "chevan_sutherland_two_variable",
     "das_gupta_decomposition",
     "hierarchical_owen_decomposition",
     "kitagawa_two_period",

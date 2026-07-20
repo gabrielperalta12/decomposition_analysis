@@ -17,7 +17,7 @@ Markdown versions of every lesson—including executed outputs and generated fig
 
 The validated Python API is in `scripts/rate_decomposition.py`. It implements:
 
-- two-period Kitagawa and the one-variable Chevan category report;
+- two-period Kitagawa, the one-variable Chevan category report, and the exact two-variable Chevan–Sutherland refinement;
 - order-dependent stepwise replacement;
 - symmetric Das Gupta/Shorrocks all-orders allocation, exact or Monte Carlo;
 - hierarchical Owen allocation for predeclared factor groups;
@@ -73,6 +73,40 @@ hierarchical = hierarchical_owen_decomposition(
 ```
 
 `Das Gupta` and `Shorrocks` intentionally share the same all-orders engine here: with the same value function and coalition convention they produce the same symmetric allocation. The aliases preserve the interpretation used in the notebook.
+
+## Production implementation of the Notebook 04 route
+
+The API in `scripts/shapley_decomposition.py` keeps the Shapley allocation operator separate from the scientific definition of the coalition value. It includes:
+
+- exact generic Shapley allocation and Shorrocks activation/neutralization;
+- Biewen pure main and interaction effects through Möbius inversion;
+- Israeli decomposition of linear-regression $R^2$;
+- Zhao channel and ordered-touchpoint attribution for observed journeys;
+- CF-Shapley driven by an explicit unit- or timestamp-specific counterfactual oracle.
+
+```python
+import numpy as np
+
+from scripts.shapley_decomposition import (
+    biewen_interactions,
+    counterfactual_shapley,
+    israeli_r2_shapley,
+    shorrocks_decomposition,
+    zhao_journey_attribution,
+)
+
+biewen = biewen_interactions(base, final, revenue)
+shorrocks = shorrocks_decomposition(base, final, revenue)
+
+# This equality is a tested identity: Shapley divides each pure interaction
+# equally among the factors that participate in it.
+np.testing.assert_allclose(
+    biewen.shapley_from_interactions.loc[shorrocks.contributions.index],
+    shorrocks.contributions,
+)
+```
+
+`counterfactual_shapley` does not estimate a causal model. It allocates values returned by the supplied counterfactual oracle. The caller remains responsible for the causal graph, structural equations, reference intervention, identification assumptions, and uncertainty.
 
 Run the production test suite with:
 

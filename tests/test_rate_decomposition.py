@@ -9,6 +9,7 @@ from scripts.rate_decomposition import (
     DecompositionError,
     all_orders_decomposition,
     chevan_categorical_report,
+    chevan_sutherland_two_variable,
     hierarchical_owen_decomposition,
     kitagawa_two_period,
     multiperiod_kitagawa,
@@ -46,6 +47,36 @@ class KitagawaTests(unittest.TestCase):
             report.loc["variable-level total", "total_contribution"],
             result.summary["observed_change"],
         )
+
+    def test_chevan_sutherland_two_variable_is_exact(self):
+        p = [np.array([.55, .45]), np.array([.48, .52])]
+        q = [
+            np.array([[.70, .30], [.60, .40]]),
+            np.array([[.76, .24], [.64, .36]]),
+        ]
+        rates = [
+            np.array([[.045, .080], [.035, .065]]),
+            np.array([[.041, .086], [.040, .070]]),
+        ]
+        result = chevan_sutherland_two_variable(
+            p[0][:, None] * q[0],
+            p[1][:, None] * q[1],
+            rates[0],
+            rates[1],
+            row_labels=["Paid Search", "Organic"],
+            column_labels=["Mobile", "Desktop"],
+        )
+        self.assertAlmostEqual(result.summary["identity_error"], 0.0)
+        self.assertAlmostEqual(
+            result.categories["total"].sum(), result.summary["observed_change"]
+        )
+        self.assertEqual(set(result.categories["variable_family"]), {"I", "J"})
+
+    def test_chevan_sutherland_rejects_structural_zero(self):
+        shares = np.array([[.5, .0], [.2, .3]])
+        rates = np.full((2, 2), .1)
+        with self.assertRaises(DecompositionError):
+            chevan_sutherland_two_variable(shares, shares, rates, rates)
 
     def test_invalid_shares_are_rejected(self):
         bad = self.data.copy()
